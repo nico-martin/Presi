@@ -2,7 +2,7 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import config from "./config.json";
 
-import { Wrapper, Slide } from "@presi";
+import { Wrapper, Slide } from "@presi/react";
 
 const App: React.FC = () => (
   <Wrapper config={config} aspectRatio="16:9">

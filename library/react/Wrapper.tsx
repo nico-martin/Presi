@@ -1,5 +1,5 @@
 import React from "react";
-import Presi from "../core/Presi.ts";
+import { Presi } from "../core";
 
 const Wrapper: React.FC<{
   children: React.ReactElement | Array<React.ReactElement>;

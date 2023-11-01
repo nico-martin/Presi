@@ -1,0 +1,27 @@
+body {
+  margin: 0;
+  padding: 0;
+  background-color: #000;
+}
+
+.wrapper {
+  max-width: 100vw;
+  max-height: 100vh;
+  width: 100%;
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.slide {
+  background-color: #fff;
+
+  :global(.fragment) {
+    opacity: 0;
+  }
+
+  :global(.fragment.visible) {
+    opacity: 1;
+  }
+}

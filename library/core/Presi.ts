@@ -1,29 +1,15 @@
+import styles from "./styles.module.css";
 import EventBus from "./EventBus";
-
-interface PresiConfig {
-  aspectRatio?: `${number}:${number}`;
-}
-
-interface Events {
-  slideChange: {
-    prevSlide: HTMLElement;
-    slide: HTMLElement;
-  };
-  fragmentChange: {
-    prevFragmentIndex: number;
-    fragmentIndex: number;
-  };
-}
 
 class Presi {
   private readonly wrapper: HTMLElement = null;
   private readonly slides: Array<HTMLElement> = [];
   private fragments: Array<Array<HTMLElement>> = [];
-  public hasNextSlide = false;
-  public hasPrevSlide = false;
+  public hasNextSlide: boolean = false;
+  public hasPrevSlide: boolean = false;
   public backwards: boolean = false;
   public currentFragmentIndex: number = -1;
-  public eventBus: EventBus<Events> = new EventBus<Events>();
+  public eventBus: EventBus<PresiEvents> = new EventBus<PresiEvents>();
 
   public constructor(
     wrapper: HTMLElement,
@@ -31,10 +17,12 @@ class Presi {
   ) {
     this.wrapper = wrapper;
     this.wrapper.style.aspectRatio = aspectRatio.replace(":", "/");
+    this.wrapper.classList.add(styles.wrapper);
     this.slides = Array.from(this.wrapper.querySelectorAll("section"));
     this.slides.map((slide) => {
       slide.style.aspectRatio = aspectRatio.replace(":", "/");
       slide.style.display = "none";
+      slide.classList.add(styles.slide);
     });
     this.fragments = [];
 

@@ -24,8 +24,8 @@
     "noFallthroughCasesInSwitch": true,
     "strictNullChecks": false,
     "paths": {
-      "@presi": [
-        "./library/index.ts",
+      "@presi/react": [
+        "./library/react/index.ts",
       ]
     },
     "typeRoots": [
