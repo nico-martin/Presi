@@ -7,11 +7,7 @@ import { keyBoardNavigation, parseHash } from "../utils/functions.ts";
 
 class Presi {
   private readonly wrapper: HTMLElement = null;
-  //private fragments: Array<Array<HTMLElement>> = [];
-  public hasNextSlide: boolean = false;
-  public hasPrevSlide: boolean = false;
-  public hasNextFragment: boolean = false;
-  public hasPrevFragment: boolean = false;
+  public aspect: `${number}:${number}`;
   public backwards: boolean = false;
   private readonly calculateFontSize: () => number;
   public eventBus: EventBus<PresiEvents> = new EventBus<PresiEvents>();
@@ -28,6 +24,7 @@ class Presi {
     }: PresiConfig,
   ) {
     this.calculateFontSize = calculateFontSize;
+    this.aspect = aspectRatio;
     const aspect = aspectRatio.replace(":", "/");
     this.wrapper = wrapper;
     this.wrapper.classList.add(styles.wrapper);
@@ -89,6 +86,11 @@ class Presi {
       cb(data as PresiEventsFragmentChange),
     );
 
+  public onStateChange = (cb: (data: PresiEventsStateChange) => void) =>
+    this.eventBus.subscribe("stateChange", (data) =>
+      cb(data as PresiEventsStateChange),
+    );
+
   public cleanUp = () => {
     removeEventListener("hashchange", this.onHashChanged);
     removeEventListener("keyup", this.keyup);
@@ -99,7 +101,7 @@ class Presi {
     fragmentIndex: number | false;
   } => parseHash(window.location.hash);
 
-  private getCurrentHashStateSave = (): {
+  public getCurrentHashStateSave = (): {
     slideIndex: number;
     fragmentIndex: number;
   } => {
@@ -116,29 +118,14 @@ class Presi {
     );
 
     this.drawSlide(slideIndex || 0, fragmentIndex || 0);
-
-    /*
-    const currentHash = this.getCurrentHashState();
-    const prevHash = parseHash(e.oldURL.split("#")[1]);
-    if (currentHash.slideIndex !== prevHash.slideIndex) {
-      this.updateActiveSlide();
-    } else if (currentHash.fragmentIndex !== prevHash.fragmentIndex) {
-      this.updateActiveFragment();
-    }*/
   };
 
   private drawSlide = (slideIndex: number, fragmentIndex: number) => {
-    this.hasPrevSlide = slideIndex > 0;
-    this.hasNextSlide = slideIndex < this.slides.length - 1;
-
     this.slides.map(({ slide }) => {
       slide.style.display = "none";
     });
     const currentSlide = this.slides[slideIndex];
     currentSlide.slide.style.display = "block";
-
-    this.hasPrevFragment = fragmentIndex > 0;
-    this.hasNextFragment = fragmentIndex < currentSlide.fragments.length - 1;
 
     currentSlide.fragments.map((fragmentGroup, i) => {
       if (i <= fragmentIndex) {
@@ -152,21 +139,6 @@ class Presi {
       }
     });
   };
-
-  /*
-  private evaluateFragments = () => {
-    this.fragments.map((fragmentGroup, i) => {
-      if (i <= this.currentFragmentIndex) {
-        fragmentGroup.map((fragment) => {
-          fragment.classList.add("visible");
-        });
-      } else {
-        fragmentGroup.map((fragment) => {
-          fragment.classList.remove("visible");
-        });
-      }
-    });
-  };*/
 
   private getFragmentsFromSlide = (slide: HTMLElement): HTMLElement[][] => {
     const fragments: HTMLElement[] = Array.from(
@@ -212,48 +184,68 @@ class Presi {
   public next = async () => {
     this.backwards = false;
     const prev = this.getCurrentHashStateSave();
-    if (this.hasNextFragment) {
-      await this.updateHash(prev, {
-        slideIndex: prev.slideIndex,
-        fragmentIndex: prev.fragmentIndex + 1,
-      });
-    } else if (this.hasNextSlide) {
-      await this.updateHash(prev, {
-        slideIndex: prev.slideIndex + 1,
-        fragmentIndex: 0,
-      });
-    } else {
+    const next = this.nextState(prev);
+    if (next === false) {
       console.log("end");
+    } else {
+      await this.updateHash(prev, next);
     }
   };
 
   public prev = async () => {
     this.backwards = true;
     const prev = this.getCurrentHashStateSave();
-    if (this.hasPrevFragment) {
-      await this.updateHash(prev, {
+    const back = this.backState(prev);
+    if (back === false) {
+      console.log("start");
+    } else {
+      await this.updateHash(prev, back);
+    }
+  };
+
+  public nextState = (prev: PresiHashState): PresiHashState | false => {
+    const currentSlide = this.slides[prev.slideIndex];
+    const hasNextSlide = prev.slideIndex < this.slides.length - 1;
+    const hasNextFragment =
+      prev.fragmentIndex < currentSlide.fragments.length - 1;
+
+    if (hasNextFragment) {
+      return {
+        slideIndex: prev.slideIndex,
+        fragmentIndex: prev.fragmentIndex + 1,
+      };
+    } else if (hasNextSlide) {
+      return {
+        slideIndex: prev.slideIndex + 1,
+        fragmentIndex: 0,
+      };
+    } else {
+      return false;
+    }
+  };
+
+  public backState = (prev: PresiHashState): PresiHashState | false => {
+    const hasPrevSlide = prev.slideIndex > 0;
+    const hasPrevFragment = prev.fragmentIndex > 0;
+
+    if (hasPrevFragment) {
+      return {
         slideIndex: prev.slideIndex,
         fragmentIndex: prev.fragmentIndex - 1,
-      });
-    } else if (this.hasPrevSlide) {
-      await this.updateHash(prev, {
+      };
+    } else if (hasPrevSlide) {
+      return {
         slideIndex: prev.slideIndex - 1,
         fragmentIndex: this.slides[prev.slideIndex - 1].fragments.length - 1,
-      });
+      };
     } else {
-      console.log("start");
+      return false;
     }
   };
 
   private updateHash = async (
-    prevState: {
-      slideIndex: number;
-      fragmentIndex: number;
-    },
-    nextState: {
-      slideIndex: number;
-      fragmentIndex: number;
-    },
+    prevState: PresiHashState,
+    nextState: PresiHashState,
   ) => {
     const slideChanged = prevState.slideIndex !== nextState.slideIndex;
 
@@ -272,6 +264,11 @@ class Presi {
         fragmentIndex: nextState.fragmentIndex,
       });
     }
+
+    this.eventBus.publish("stateChange", {
+      currentState: nextState,
+      nextState: this.nextState(nextState) || nextState,
+    });
 
     if (!document.startViewTransition || !slideChanged) {
       window.location.hash = `#/${nextState.slideIndex}/${nextState.fragmentIndex}`;

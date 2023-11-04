@@ -3,21 +3,197 @@
     <meta charset="utf-8" />
     <title>Speaker Notes</title>
     <style>
-      html {
+      ::-webkit-scrollbar {
+        width: 5px;
+      }
+
+      ::-webkit-scrollbar-thumb {
+        background: #888; /* Change the color to your preference */
+        border-radius: 5px; /* Rounded corners for the thumb */
+      }
+
+      ::-webkit-scrollbar-track {
+        background: #1d2327; /* Change the color to your preference */
+      }
+
+      html,
+      body {
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
           Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
         background-color: #1d2327;
         color: #fff;
+        margin: 0;
+        padding: 0;
+      }
+
+      iframe.preview {
+        pointer-events: none;
+        border: 1px solid #484848;
+        outline: none;
+        width: 100%;
+      }
+
+      button {
+        background-color: #37414a;
+        color: #fff;
+        border: none;
+        padding: 0.5em 1em;
+        border-radius: 0.25rem;
+        cursor: pointer;
+      }
+
+      .main {
+        display: flex;
+        width: 100%;
+        height: 100vh;
+        padding: 3vmin;
+        box-sizing: border-box;
+        gap: 3vmin;
+      }
+
+      .main .left,
+      .main .right {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        justify-content: space-between;
+      }
+
+      .main .left {
+        flex: 1 1 33%;
+      }
+
+      .main .right {
+        flex: 1 1 66%;
+      }
+
+      .notes {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        height: calc(100vh - 3vmin - 3vmin);
+      }
+
+      .notes .notes__controls {
+        display: flex;
+        justify-content: flex-end;
+        gap: 1rem;
+      }
+
+      .notes .notes__controls button {
+        font-size: 0.6rem;
+      }
+
+      .notes .notes__notes {
+        overflow-y: auto;
+        height: 100%;
+        background-color: #161a1e;
+        padding: 1rem;
+        border-radius: 0.25rem;
+      }
+
+      .controls {
+        display: flex;
+        justify-content: flex-end;
+        gap: 1rem;
+      }
+
+      .controls button {
+        font-size: 1rem;
+      }
+
+      .timing {
+        display: flex;
+        justify-content: space-between;
+        font-size: 1.2rem;
+      }
+
+      .timing p {
+        margin: 0;
+      }
+
+      .timing .timing_past {
+        cursor: pointer;
       }
     </style>
   </head>
-  <body>
-    <div class="notes"></div>
-    <div class="preview"></div>
-    <div class="control"></div>
+  <body class="main">
+    <div class="left">
+      <div class="timing">
+        <p class="timing_past" id="pastTime"></p>
+        <p class="timing_current" id="currentTime"></p>
+      </div>
+      <div class="preview">
+        <iframe id="previewCurrent" class="preview" tabindex="-1"></iframe>
+        <p>Next Slide:</p>
+        <iframe id="previewUpcoming" class="preview" tabindex="-1"></iframe>
+      </div>
+      <div class="controls">
+        <button id="prev">Prev</button>
+        <button id="next">Next</button>
+      </div>
+    </div>
+    <div class="right">
+      <div class="notes">
+        <div class="notes__controls">
+          <button id="smallerFont">A-</button>
+          <button id="biggerFont">A+</button>
+        </div>
+        <div class="notes__notes" id="notes"></div>
+      </div>
+    </div>
     <script>
       let sourceWindow;
       let sourceWindowOrigin;
+      let fontSize = window.localStorage.getItem("presiFontSize") || 16;
+      let seconds = 0;
+      let secondsInterval;
+
+      document.querySelector("#notes").style.fontSize = `${fontSize}px`;
+      document.querySelector("#biggerFont").addEventListener("click", () => {
+        fontSize += 5;
+        window.localStorage.setItem("presiFontSize", fontSize);
+        document.querySelector("#notes").style.fontSize = `${fontSize}px`;
+      });
+      document.querySelector("#smallerFont").addEventListener("click", () => {
+        if (fontSize > 5) {
+          fontSize -= 5;
+        }
+        window.localStorage.setItem("presiFontSize", fontSize);
+        document.querySelector("#notes").style.fontSize = `${fontSize}px`;
+      });
+
+      document.querySelector("#pastTime").innerHTML = `00:00`;
+      document.querySelector("#currentTime").innerHTML =
+        new Date().toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+        });
+
+      const setupInterval = () => {
+        secondsInterval = window.setInterval(() => {
+          seconds += 1;
+          const minutes = Math.floor(seconds / 60);
+          const remainingSeconds = seconds % 60;
+          document.querySelector("#pastTime").innerHTML = `${String(
+            minutes,
+          ).padStart(2, "0")}:${String(remainingSeconds).padStart(2, "0")}`;
+
+          document.querySelector("#currentTime").innerHTML =
+            new Date().toLocaleTimeString([], {
+              hour: "2-digit",
+              minute: "2-digit",
+            });
+        }, 1000);
+      };
+      setupInterval();
+
+      document.querySelector("#pastTime").addEventListener("click", () => {
+        seconds = 0;
+        clearInterval(secondsInterval);
+        setupInterval();
+        document.querySelector("#pastTime").innerHTML = `00:00`;
+      });
 
       window.addEventListener(
         "message",
@@ -25,12 +201,53 @@
           sourceWindow = event.source;
           sourceWindowOrigin = event.origin;
           const data = JSON.parse(event.data);
+
           if (data.type === "changed-slide") {
-            document.querySelector(".notes").innerHTML = data.payload;
+            document.querySelector("#notes").innerHTML = data.payload;
+          }
+
+          if (
+            data.type === "changed-preview-state" ||
+            data.type === "connect"
+          ) {
+            const currentIframe = document.querySelector("#previewCurrent");
+            const upcomingIframe = document.querySelector("#previewUpcoming");
+            if (data.payload.aspectRatio) {
+              const aspectRatio = data.payload.aspectRatio.replace(":", "/");
+              currentIframe.style.aspectRatio = aspectRatio;
+              upcomingIframe.style.aspectRatio = aspectRatio;
+            }
+
+            currentIframe.src = `${sourceWindowOrigin}#/${data.payload.current.slideIndex}/${data.payload.current.fragmentIndex}"`;
+            upcomingIframe.src = `${sourceWindowOrigin}#/${data.payload.upcoming.slideIndex}/${data.payload.upcoming.fragmentIndex}"`;
           }
         },
         false,
       );
+
+      document
+        .querySelector(".controls #prev")
+        .addEventListener("click", () => {
+          sourceWindow.postMessage(
+            JSON.stringify({
+              type: "keyup",
+              payload: "ArrowLeft",
+            }),
+            sourceWindowOrigin,
+          );
+        });
+
+      document
+        .querySelector(".controls #next")
+        .addEventListener("click", () => {
+          sourceWindow.postMessage(
+            JSON.stringify({
+              type: "keyup",
+              payload: "ArrowRight",
+            }),
+            sourceWindowOrigin,
+          );
+        });
 
       addEventListener("keyup", (e) => {
         sourceWindow.postMessage(

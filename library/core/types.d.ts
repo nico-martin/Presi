@@ -3,6 +3,11 @@ interface PresiConfig {
   calculateFontSize?: () => number;
 }
 
+interface PresiHashState {
+  slideIndex: number;
+  fragmentIndex: number;
+}
+
 interface PresiEventsSlideChange {
   prevSlide: HTMLElement;
   prevSlideIndex: number;
@@ -15,7 +20,13 @@ interface PresiEventsFragmentChange {
   fragmentIndex: number;
 }
 
+interface PresiEventsStateChange {
+  currentState: PresiHashState;
+  nextState: PresiHashState;
+}
+
 interface PresiEvents {
   slideChange: PresiEventsSlideChange;
   fragmentChange: PresiEventsFragmentChange;
+  stateChange: PresiEventsStateChange;
 }

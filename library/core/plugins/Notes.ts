@@ -11,6 +11,7 @@ class Notes {
     addEventListener("keyup", this.keyup);
     window.addEventListener("message", this.onMessage);
     this.presi.onSlideChange(this.onSlideChange);
+    this.presi.onStateChange(this.onStateChange);
   }
 
   private keyup = (e: KeyboardEvent) => {
@@ -51,6 +52,26 @@ class Notes {
       );
   };
 
+  private onStateChange = (event: PresiEventsStateChange) => {
+    this.speakerWindow &&
+      this.speakerWindow.postMessage(
+        JSON.stringify({
+          type: "changed-preview-state",
+          payload: {
+            current: {
+              slideIndex: event.currentState.slideIndex,
+              fragmentIndex: event.currentState.fragmentIndex,
+            },
+            upcoming: {
+              slideIndex: event.nextState.slideIndex,
+              fragmentIndex: event.nextState.fragmentIndex,
+            },
+          },
+        }),
+        "*",
+      );
+  };
+
   private onMessage = (event: MessageEvent) => {
     if (typeof event.data !== "string") return;
     const data = JSON.parse(event.data);
@@ -63,6 +84,11 @@ class Notes {
     this.speakerWindow.postMessage(
       JSON.stringify({
         type: "connect",
+        payload: {
+          aspectRatio: this.presi.aspect,
+          current: this.presi.getCurrentHashStateSave(),
+          upcoming: this.presi.nextState(this.presi.getCurrentHashStateSave()),
+        },
       }),
       "*",
     );
