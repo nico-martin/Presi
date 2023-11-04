@@ -6,7 +6,7 @@ import { Wrapper, Slide } from "@presi/react";
 
 const App: React.FC = () => (
   <Wrapper config={config} aspectRatio="16:9">
-    <Slide title="Hello">
+    <Slide title="Title" notes={["Das sind meine Notes für die erste Seite"]}>
       <p>Hello</p>
       <p className="fragment">World 1</p>
       <p className="fragment" data-fragment-index="1">
@@ -20,10 +20,10 @@ const App: React.FC = () => (
         World 5
       </p>
     </Slide>
-    <Slide title="test">
+    <Slide title="Slide 1">
       <p>LoremIpsum</p>
     </Slide>
-    <Slide title="test">
+    <Slide title="Slide 2">
       <p>Dolor</p>
     </Slide>
   </Wrapper>

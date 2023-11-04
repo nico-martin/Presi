@@ -1,0 +1,46 @@
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Speaker Notes</title>
+    <style>
+      html {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+        background-color: #1d2327;
+        color: #fff;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="notes"></div>
+    <div class="preview"></div>
+    <div class="control"></div>
+    <script>
+      let sourceWindow;
+      let sourceWindowOrigin;
+
+      window.addEventListener(
+        "message",
+        (event) => {
+          sourceWindow = event.source;
+          sourceWindowOrigin = event.origin;
+          const data = JSON.parse(event.data);
+          if (data.type === "changed-slide") {
+            document.querySelector(".notes").innerHTML = data.payload;
+          }
+        },
+        false,
+      );
+
+      addEventListener("keyup", (e) => {
+        sourceWindow.postMessage(
+          JSON.stringify({
+            type: "keyup",
+            payload: e.code,
+          }),
+          sourceWindowOrigin,
+        );
+      });
+    </script>
+  </body>
+</html>

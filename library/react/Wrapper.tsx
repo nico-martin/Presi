@@ -15,8 +15,8 @@ const Wrapper: React.FC<{
     if (ref?.current && !presiInstanceInit) {
       setPresiInstanceInit(true);
       const p = new Presi(ref.current, { aspectRatio });
-      p.on("fragmentChange", (data) => console.log("fragmentChanged", data));
-      p.on("slideChange", (data) => console.log("slideChange", data));
+      //p.onFragmentChange((data) => console.log("fragmentChanged", data));
+      //p.onSlideChange((data) => console.log("slideChange", data));
       setPresiInstance(p);
     }
   }, [ref, presiInstanceInit]);

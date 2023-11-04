@@ -5,17 +5,30 @@ body {
 }
 
 .wrapper {
-  max-width: 100vw;
-  max-height: 100vh;
-  width: 100%;
   position: fixed;
   left: 50%;
   top: 50%;
+  aspect-ratio: var(--aspect-ratio);
+  background-color: pink;
   transform: translate(-50%, -50%);
+  width: 100vw;
+}
+
+@media (min-aspect-ratio: var(--aspect-ratio)) {
+  .wrapper {
+    width: auto;
+    height: 100vh;
+  }
 }
 
 .slide {
   background-color: #fff;
+  width: 100%;
+  aspect-ratio: var(--aspect-ratio);
+
+  h1 {
+    font-size: 2rem;
+  }
 
   :global(.fragment) {
     opacity: 0;
@@ -23,5 +36,9 @@ body {
 
   :global(.fragment.visible) {
     opacity: 1;
+  }
+
+  aside {
+    display: none;
   }
 }

@@ -1,64 +1,159 @@
 import styles from "./styles.module.css";
 import EventBus from "./EventBus";
+import Notes from "./plugins/Notes.ts";
+import { keyBoardNavigation, parseHash } from "../utils/functions.ts";
+
+// todo: custom function should also be fragments
 
 class Presi {
   private readonly wrapper: HTMLElement = null;
-  private readonly slides: Array<HTMLElement> = [];
-  private fragments: Array<Array<HTMLElement>> = [];
+  //private fragments: Array<Array<HTMLElement>> = [];
   public hasNextSlide: boolean = false;
   public hasPrevSlide: boolean = false;
+  public hasNextFragment: boolean = false;
+  public hasPrevFragment: boolean = false;
   public backwards: boolean = false;
-  public currentFragmentIndex: number = -1;
+  private readonly calculateFontSize: () => number;
   public eventBus: EventBus<PresiEvents> = new EventBus<PresiEvents>();
+  private slides: Array<{
+    slide: HTMLElement;
+    fragments: HTMLElement[][];
+  }> = [];
 
   public constructor(
     wrapper: HTMLElement,
-    { aspectRatio = "16:9" }: PresiConfig,
+    {
+      aspectRatio = "16:9",
+      calculateFontSize = () => window.innerWidth / 48,
+    }: PresiConfig,
   ) {
+    this.calculateFontSize = calculateFontSize;
+    const aspect = aspectRatio.replace(":", "/");
     this.wrapper = wrapper;
-    this.wrapper.style.aspectRatio = aspectRatio.replace(":", "/");
     this.wrapper.classList.add(styles.wrapper);
-    this.slides = Array.from(this.wrapper.querySelectorAll("section"));
-    this.slides.map((slide) => {
-      slide.style.aspectRatio = aspectRatio.replace(":", "/");
+    this.wrapper.style.setProperty("--aspect-ratio", aspect);
+
+    const existingPresiStyles = document.getElementById("presi-styles");
+    existingPresiStyles && existingPresiStyles.remove();
+
+    const presiStyles = document.createElement("style");
+    presiStyles.id = "presi-styles";
+    presiStyles.innerHTML = `@media (min-aspect-ratio: ${aspect}) {
+  .${styles.wrapper} {
+    width: auto;
+    height: 100vh;
+  }
+}`;
+    document.head.appendChild(presiStyles);
+    const slides = Array.from(this.wrapper.querySelectorAll("section"));
+    slides.map((slide) => {
       slide.style.display = "none";
       slide.classList.add(styles.slide);
+      this.slides.push({
+        slide,
+        fragments: this.getFragmentsFromSlide(slide),
+      });
     });
-    this.fragments = [];
+    const currentHash = this.getCurrentHashState();
 
-    if (this.getCurrentHashIndex() === false) {
-      window.location.hash = "#/0";
+    if (
+      currentHash.slideIndex === false ||
+      currentHash.fragmentIndex === false
+    ) {
+      window.location.hash = `#/${currentHash.slideIndex || 0}/${
+        currentHash.fragmentIndex || 0
+      }`;
     } else {
-      this.updateActiveSlide();
+      this.drawSlide(currentHash.slideIndex, currentHash.fragmentIndex);
     }
 
-    addEventListener("hashchange", this.updateActiveSlide);
-    addEventListener("keyup", this.keypress);
+    addEventListener("hashchange", this.onHashChanged);
+    addEventListener("keyup", this.keyup);
+    addEventListener("resize", this.resize);
+    this.resize();
+
+    new Notes(this);
   }
 
-  public on = this.eventBus.subscribe;
+  private resize = () => {
+    document.documentElement.style.fontSize = `${this.calculateFontSize()}px`;
+  };
+
+  public onSlideChange = (cb: (data: PresiEventsSlideChange) => void) =>
+    this.eventBus.subscribe("slideChange", (data) =>
+      cb(data as PresiEventsSlideChange),
+    );
+
+  public onFragmentChange = (cb: (data: PresiEventsFragmentChange) => void) =>
+    this.eventBus.subscribe("fragmentChange", (data) =>
+      cb(data as PresiEventsFragmentChange),
+    );
 
   public cleanUp = () => {
-    removeEventListener("hashchange", this.updateActiveSlide);
-    removeEventListener("keyup", this.keypress);
+    removeEventListener("hashchange", this.onHashChanged);
+    removeEventListener("keyup", this.keyup);
   };
 
-  private updateActiveSlide = () => {
-    const index = this.getCurrentHashIndex() || 0;
-    this.hasPrevSlide = index > 0;
-    this.hasNextSlide = index < this.slides.length - 1;
+  private getCurrentHashState = (): {
+    slideIndex: number | false;
+    fragmentIndex: number | false;
+  } => parseHash(window.location.hash);
 
-    this.slides.map((slide, i) => {
-      slide.style.display = i === index ? "block" : "none";
+  private getCurrentHashStateSave = (): {
+    slideIndex: number;
+    fragmentIndex: number;
+  } => {
+    const state = parseHash(window.location.hash);
+    return {
+      slideIndex: state.slideIndex || 0,
+      fragmentIndex: state.fragmentIndex || 0,
+    };
+  };
+
+  private onHashChanged = (e: HashChangeEvent) => {
+    const { slideIndex, fragmentIndex } = parseHash(
+      "#" + e.newURL.split("#")[1],
+    );
+
+    this.drawSlide(slideIndex || 0, fragmentIndex || 0);
+
+    /*
+    const currentHash = this.getCurrentHashState();
+    const prevHash = parseHash(e.oldURL.split("#")[1]);
+    if (currentHash.slideIndex !== prevHash.slideIndex) {
+      this.updateActiveSlide();
+    } else if (currentHash.fragmentIndex !== prevHash.fragmentIndex) {
+      this.updateActiveFragment();
+    }*/
+  };
+
+  private drawSlide = (slideIndex: number, fragmentIndex: number) => {
+    this.hasPrevSlide = slideIndex > 0;
+    this.hasNextSlide = slideIndex < this.slides.length - 1;
+
+    this.slides.map(({ slide }) => {
+      slide.style.display = "none";
     });
+    const currentSlide = this.slides[slideIndex];
+    currentSlide.slide.style.display = "block";
 
-    this.fragments = this.getFragmentsFromSlide(this.slides[index]);
-    this.currentFragmentIndex = this.backwards ? this.fragments.length - 1 : -1;
-    this.evaluateFragments();
+    this.hasPrevFragment = fragmentIndex > 0;
+    this.hasNextFragment = fragmentIndex < currentSlide.fragments.length - 1;
 
-    // todo: custom function should also be fragments
+    currentSlide.fragments.map((fragmentGroup, i) => {
+      if (i <= fragmentIndex) {
+        fragmentGroup.map((fragment) => {
+          fragment.classList.add("visible");
+        });
+      } else {
+        fragmentGroup.map((fragment) => {
+          fragment.classList.remove("visible");
+        });
+      }
+    });
   };
 
+  /*
   private evaluateFragments = () => {
     this.fragments.map((fragmentGroup, i) => {
       if (i <= this.currentFragmentIndex) {
@@ -71,7 +166,7 @@ class Presi {
         });
       }
     });
-  };
+  };*/
 
   private getFragmentsFromSlide = (slide: HTMLElement): HTMLElement[][] => {
     const fragments: HTMLElement[] = Array.from(
@@ -94,12 +189,13 @@ class Presi {
         {},
       );
 
-    const fragmentsReturn: HTMLElement[][] = fragmentsWithoutIndex.map(
-      (fragmentGroup, i) => [
+    const fragmentsReturn: HTMLElement[][] = [
+      [],
+      ...fragmentsWithoutIndex.map((fragmentGroup, i) => [
         ...fragmentGroup,
         ...(i in fragmentsWithIndexGrouped ? fragmentsWithIndexGrouped[i] : []),
-      ],
-    );
+      ]),
+    ];
 
     Object.entries(fragmentsWithIndexGrouped).map(([index, fragmentGroup]) => {
       if (parseInt(index) <= fragmentsWithoutIndex.length) return;
@@ -109,99 +205,91 @@ class Presi {
     return fragmentsReturn;
   };
 
-  private keypress = (e: KeyboardEvent) => {
-    (e.code === "ArrowRight" || e.code === "Space") && this.next();
-    e.code === "ArrowLeft" && this.prev();
-  };
-
-  private getCurrentHashIndex = (): number | false => {
-    const index = parseInt(window.location.hash.replace("#/", ""));
-    return isNaN(index) ? false : index;
-  };
-
-  private changeHash = async (newSlideNo: number) => {
-    const currentSlideNo = this.getCurrentHashIndex() || 0;
-    const backwards = newSlideNo < currentSlideNo;
-
-    if (!document.startViewTransition) {
-      window.location.hash = `#/${newSlideNo}`;
-    } else {
-      backwards && document.documentElement.classList.add("back-transition");
-      const transition = document.startViewTransition(() => {
-        window.location.hash = `#/${newSlideNo}`;
-      });
-      try {
-        await transition.finished;
-      } finally {
-        document.documentElement.classList.remove("back-transition");
-      }
-    }
-    window.location.hash = `#/${newSlideNo}`;
+  private keyup = (e: KeyboardEvent) => {
+    keyBoardNavigation(e.code, this.next, this.prev);
   };
 
   public next = async () => {
     this.backwards = false;
-    if (this.fragments.length - 1 === this.currentFragmentIndex) {
-      await this.nextSlide();
+    const prev = this.getCurrentHashStateSave();
+    if (this.hasNextFragment) {
+      await this.updateHash(prev, {
+        slideIndex: prev.slideIndex,
+        fragmentIndex: prev.fragmentIndex + 1,
+      });
+    } else if (this.hasNextSlide) {
+      await this.updateHash(prev, {
+        slideIndex: prev.slideIndex + 1,
+        fragmentIndex: 0,
+      });
     } else {
-      await this.nextFragment();
+      console.log("end");
     }
   };
 
   public prev = async () => {
     this.backwards = true;
-    if (this.currentFragmentIndex === -1) {
-      await this.prevSlide();
+    const prev = this.getCurrentHashStateSave();
+    if (this.hasPrevFragment) {
+      await this.updateHash(prev, {
+        slideIndex: prev.slideIndex,
+        fragmentIndex: prev.fragmentIndex - 1,
+      });
+    } else if (this.hasPrevSlide) {
+      await this.updateHash(prev, {
+        slideIndex: prev.slideIndex - 1,
+        fragmentIndex: this.slides[prev.slideIndex - 1].fragments.length - 1,
+      });
     } else {
-      await this.prevFragment();
+      console.log("start");
     }
   };
 
-  public nextFragment = async () => {
-    const prevFragmentIndex = this.currentFragmentIndex;
-    const fragmentIndex = this.currentFragmentIndex + 1;
-    this.eventBus.publish("fragmentChange", {
-      prevFragmentIndex,
-      fragmentIndex,
-    });
+  private updateHash = async (
+    prevState: {
+      slideIndex: number;
+      fragmentIndex: number;
+    },
+    nextState: {
+      slideIndex: number;
+      fragmentIndex: number;
+    },
+  ) => {
+    const slideChanged = prevState.slideIndex !== nextState.slideIndex;
 
-    this.currentFragmentIndex = fragmentIndex;
-    this.evaluateFragments();
+    if (prevState.slideIndex !== nextState.slideIndex) {
+      this.eventBus.publish("slideChange", {
+        prevSlide: this.slides[prevState.slideIndex].slide,
+        prevSlideIndex: prevState.slideIndex,
+        slide: this.slides[nextState.slideIndex].slide,
+        slideIndex: nextState.slideIndex,
+      });
+    }
+
+    if (prevState.fragmentIndex !== nextState.fragmentIndex) {
+      this.eventBus.publish("fragmentChange", {
+        prevFragmentIndex: prevState.fragmentIndex,
+        fragmentIndex: nextState.fragmentIndex,
+      });
+    }
+
+    if (!document.startViewTransition || !slideChanged) {
+      window.location.hash = `#/${nextState.slideIndex}/${nextState.fragmentIndex}`;
+      return;
+    }
+    this.backwards && document.documentElement.classList.add("back-transition");
+    const transition = document.startViewTransition(() => {
+      window.location.hash = `#/${nextState.slideIndex}/${nextState.fragmentIndex}`;
+    });
+    try {
+      await transition.finished;
+    } finally {
+      document.documentElement.classList.remove("back-transition");
+    }
   };
 
-  public prevFragment = async () => {
-    const prevFragmentIndex = this.currentFragmentIndex;
-    const fragmentIndex = this.currentFragmentIndex - 1;
-    this.eventBus.publish("fragmentChange", {
-      prevFragmentIndex,
-      fragmentIndex,
-    });
-
-    this.currentFragmentIndex = fragmentIndex;
-    this.evaluateFragments();
-  };
-
-  public nextSlide = async () => {
-    if (!this.hasNextSlide) return;
-    const prevSlide = this.getCurrentHashIndex() || 0;
-    const slide = prevSlide + 1;
-    this.eventBus.publish("slideChange", {
-      prevSlide: this.slides[prevSlide],
-      slide: this.slides[slide],
-    });
-    await this.changeHash((this.getCurrentHashIndex() || 0) + 1);
-  };
-
-  public prevSlide = async () => {
-    if (!this.hasPrevSlide) return;
-    const prevSlide = this.getCurrentHashIndex() || 0;
-    const slide = prevSlide - 1;
-    this.eventBus.publish("slideChange", {
-      prevSlide: this.slides[prevSlide],
-      slide: this.slides[slide],
-    });
-    await this.changeHash((this.getCurrentHashIndex() || 0) - 1);
-  };
+  public getCurrentSlide = (): HTMLElement =>
+    this.slides[this.getCurrentHashState().slideIndex || 0].slide;
 }
 
 export default Presi;

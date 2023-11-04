@@ -3,9 +3,14 @@ import React from "react";
 export interface SlideProps {
   children: React.ReactElement | Array<React.ReactElement>;
   title?: string;
+  notes?: Array<string>;
 }
 
-const Slide: React.FC<SlideProps> = ({ children, title = "" }) => {
+const Slide: React.FC<SlideProps> = ({
+  children,
+  title = "",
+  notes = null,
+}) => {
   return (
     <section
       style={{
@@ -14,6 +19,13 @@ const Slide: React.FC<SlideProps> = ({ children, title = "" }) => {
     >
       <h1>{title}</h1>
       {children}
+      {notes && (
+        <aside>
+          {notes.map((note, i) => (
+            <p key={i}>{note}</p>
+          ))}
+        </aside>
+      )}
     </section>
   );
 };
