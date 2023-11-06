@@ -1,7 +1,11 @@
 import styles from "./styles.module.css";
 import EventBus from "./EventBus";
 import Notes from "./plugins/Notes.ts";
-import { keyBoardNavigation, parseHash } from "../utils/functions.ts";
+import {
+  keyBoardFullscreen,
+  keyBoardNavigation,
+  parseHash,
+} from "./utils/functions.ts";
 
 // todo: custom function should also be fragments
 
@@ -179,6 +183,7 @@ class Presi {
 
   private keyup = (e: KeyboardEvent) => {
     keyBoardNavigation(e.code, this.next, this.prev);
+    keyBoardFullscreen(e.code);
   };
 
   public next = async () => {

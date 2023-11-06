@@ -14,6 +14,16 @@ export const keyBoardNavigation = (
   keyCode === "ArrowLeft" && prev();
 };
 
+export const keyBoardFullscreen = (keyCode: string) => {
+  if (keyCode === "KeyF") {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen();
+    } else if (document.exitFullscreen) {
+      document.exitFullscreen();
+    }
+  }
+};
+
 export const parseHash = (
   input: string = "",
 ): {

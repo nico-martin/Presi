@@ -5,10 +5,14 @@
     "module": "ESNext",
     "moduleResolution": "bundler",
     "allowSyntheticDefaultImports": true,
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "allowImportingTsExtensions": true,
+    "esModuleInterop": true
   },
   "include": [
-    "vite.config.ts",
-    "app.json"
+    "library/server",
+    "library/export",
+    "app.json",
+    "presi.config.ts"
   ]
 }

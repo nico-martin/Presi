@@ -8,7 +8,7 @@
       "DOM",
       "DOM.Iterable"
     ],
-    "module": "ESNext",
+    "module": "nodenext",
     "skipLibCheck": true,
     /* Bundler mode */
     "moduleResolution": "bundler",
@@ -26,6 +26,9 @@
     "paths": {
       "@presi/react": [
         "./library/react/index.ts",
+      ],
+      "@presi/core": [
+        "./library/core/index.ts",
       ]
     },
     "typeRoots": [
@@ -34,13 +37,14 @@
     ]
   },
   "include": [
-    "library",
-    "slides"
+    "library/react",
+    "library/core",
+    "library/server",
+    "slides",
+    "presi.config.ts"
   ],
-  "references": [
-    {
-      "path": "./tsconfig.node.json"
-    }
-  ]
+  "ts-node": {
+    "esm": true
+  }
 }
 

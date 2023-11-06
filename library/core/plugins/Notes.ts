@@ -1,6 +1,6 @@
 import Presi from "../Presi.ts";
 import html from "./notesView.html?raw";
-import { keyBoardNavigation } from "../../utils/functions.ts";
+import { keyBoardNavigation } from "../utils/functions.ts";
 
 class Notes {
   private presi: Presi;
