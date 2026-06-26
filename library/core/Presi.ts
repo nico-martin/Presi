@@ -1,13 +1,66 @@
-import styles from "./styles.module.css";
 import EventBus from "./EventBus";
 import Notes from "./plugins/Notes.ts";
+import { getPresiStep, type PresiStepCleanup } from "./StepRegistry.ts";
 import {
   keyBoardFullscreen,
   keyBoardNavigation,
   parseHash,
 } from "./utils/functions.ts";
 
-// todo: custom function should also be fragments
+interface PresiTimelineEffect {
+  id: string;
+}
+
+interface PresiTimelineStep {
+  fragments: HTMLElement[];
+  effects: PresiTimelineEffect[];
+}
+
+const styles = {
+  wrapper: "presi-wrapper",
+  slide: "presi-slide",
+};
+
+const injectBaseStyles = () => {
+  if (document.getElementById("presi-base-styles")) return;
+
+  const presiStyles = document.createElement("style");
+  presiStyles.id = "presi-base-styles";
+  presiStyles.innerHTML = `body {
+  margin: 0;
+  padding: 0;
+  background-color: #000;
+}
+
+.${styles.wrapper} {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  aspect-ratio: var(--aspect-ratio);
+  background-color: pink;
+  transform: translate(-50%, -50%);
+  width: 100vw;
+}
+
+.${styles.slide} {
+  background-color: #fff;
+  width: 100%;
+  aspect-ratio: var(--aspect-ratio);
+}
+
+.${styles.slide} .fragment {
+  opacity: 0;
+}
+
+.${styles.slide} .fragment.visible {
+  opacity: 1;
+}
+
+.${styles.slide} aside {
+  display: none;
+}`;
+  document.head.appendChild(presiStyles);
+};
 
 class Presi {
   private readonly wrapper: HTMLElement = null;
@@ -17,8 +70,9 @@ class Presi {
   public eventBus: EventBus<PresiEvents> = new EventBus<PresiEvents>();
   private slides: Array<{
     slide: HTMLElement;
-    fragments: HTMLElement[][];
+    steps: PresiTimelineStep[];
   }> = [];
+  private activeEffects = new Map<string, PresiStepCleanup>();
 
   public constructor(
     wrapper: HTMLElement,
@@ -31,6 +85,7 @@ class Presi {
     this.aspect = aspectRatio;
     const aspect = aspectRatio.replace(":", "/");
     this.wrapper = wrapper;
+    injectBaseStyles();
     this.wrapper.classList.add(styles.wrapper);
     this.wrapper.style.setProperty("--aspect-ratio", aspect);
 
@@ -52,7 +107,7 @@ class Presi {
       slide.classList.add(styles.slide);
       this.slides.push({
         slide,
-        fragments: this.getFragmentsFromSlide(slide),
+        steps: this.getStepsFromSlide(slide),
       });
     });
     const currentHash = this.getCurrentHashState();
@@ -98,6 +153,7 @@ class Presi {
   public cleanUp = () => {
     removeEventListener("hashchange", this.onHashChanged);
     removeEventListener("keyup", this.keyup);
+    this.cleanInactiveEffects(new Set());
   };
 
   private getCurrentHashState = (): {
@@ -131,54 +187,82 @@ class Presi {
     const currentSlide = this.slides[slideIndex];
     currentSlide.slide.style.display = "block";
 
-    currentSlide.fragments.map((fragmentGroup, i) => {
+    const activeEffectIds = new Set<string>();
+
+    currentSlide.steps.map((step, i) => {
       if (i <= fragmentIndex) {
-        fragmentGroup.map((fragment) => {
+        step.fragments.map((fragment) => {
           fragment.classList.add("visible");
         });
+        step.effects.map((effect) => activeEffectIds.add(effect.id));
       } else {
-        fragmentGroup.map((fragment) => {
+        step.fragments.map((fragment) => {
           fragment.classList.remove("visible");
         });
       }
     });
+
+    this.cleanInactiveEffects(activeEffectIds);
+    currentSlide.steps
+      .slice(0, fragmentIndex + 1)
+      .flatMap((step) => step.effects)
+      .map((effect) => this.runEffect(effect.id));
   };
 
-  private getFragmentsFromSlide = (slide: HTMLElement): HTMLElement[][] => {
-    const fragments: HTMLElement[] = Array.from(
-      slide.querySelectorAll(".fragment"),
+  private getStepsFromSlide = (slide: HTMLElement): PresiTimelineStep[] => {
+    const timeline: PresiTimelineStep[] = [{ fragments: [], effects: [] }];
+    const elements: HTMLElement[] = Array.from(
+      slide.querySelectorAll(".fragment, [data-presi-step-id]"),
     );
+    let nextImplicitIndex = 1;
 
-    const fragmentsWithoutIndex: HTMLElement[][] = fragments
-      .filter(
-        (fragment) => fragment.getAttribute("data-fragment-index") === null,
-      )
-      .map((fragment) => [fragment]);
+    elements.map((element) => {
+      const explicitIndex = this.getExplicitStepIndex(element);
+      const stepIndex = explicitIndex ?? nextImplicitIndex;
+      nextImplicitIndex = Math.max(nextImplicitIndex, stepIndex + 1);
+      timeline[stepIndex] = timeline[stepIndex] || {
+        fragments: [],
+        effects: [],
+      };
 
-    const fragmentsWithIndexGrouped: Record<number, HTMLElement[]> =
-      fragments.reduce<Record<number, HTMLElement[]>>(
-        (acc, curr): Record<number, HTMLElement[]> => {
-          const index = curr.getAttribute("data-fragment-index");
-          if (index === null) return acc;
-          return { ...acc, [index]: [...(acc[parseInt(index)] || []), curr] };
-        },
-        {},
-      );
+      if (element.classList.contains("fragment")) {
+        timeline[stepIndex].fragments.push(element);
+      }
 
-    const fragmentsReturn: HTMLElement[][] = [
-      [],
-      ...fragmentsWithoutIndex.map((fragmentGroup, i) => [
-        ...fragmentGroup,
-        ...(i in fragmentsWithIndexGrouped ? fragmentsWithIndexGrouped[i] : []),
-      ]),
-    ];
-
-    Object.entries(fragmentsWithIndexGrouped).map(([index, fragmentGroup]) => {
-      if (parseInt(index) <= fragmentsWithoutIndex.length) return;
-      fragmentsReturn.push(fragmentGroup);
+      const effectId = element.getAttribute("data-presi-step-id");
+      if (effectId) {
+        timeline[stepIndex].effects.push({ id: effectId });
+      }
     });
 
-    return fragmentsReturn;
+    return timeline.map((step) => step || { fragments: [], effects: [] });
+  };
+
+  private getExplicitStepIndex = (element: HTMLElement): number | null => {
+    const index =
+      element.getAttribute("data-step-index") ||
+      element.getAttribute("data-fragment-index");
+    if (index === null) return null;
+
+    const stepIndex = parseInt(index);
+    return Number.isNaN(stepIndex) ? null : stepIndex;
+  };
+
+  private runEffect = (id: string) => {
+    if (this.activeEffects.has(id)) return;
+
+    const run = getPresiStep(id);
+    if (!run) return;
+    this.activeEffects.set(id, run());
+  };
+
+  private cleanInactiveEffects = (activeEffectIds: Set<string>) => {
+    Array.from(this.activeEffects.entries()).map(([id, cleanup]) => {
+      if (activeEffectIds.has(id)) return;
+
+      typeof cleanup === "function" && cleanup();
+      this.activeEffects.delete(id);
+    });
   };
 
   private keyup = (e: KeyboardEvent) => {
@@ -191,7 +275,7 @@ class Presi {
     const prev = this.getCurrentHashStateSave();
     const next = this.nextState(prev);
     if (next === false) {
-      console.log("end");
+      // end
     } else {
       await this.updateHash(prev, next);
     }
@@ -211,8 +295,7 @@ class Presi {
   public nextState = (prev: PresiHashState): PresiHashState | false => {
     const currentSlide = this.slides[prev.slideIndex];
     const hasNextSlide = prev.slideIndex < this.slides.length - 1;
-    const hasNextFragment =
-      prev.fragmentIndex < currentSlide.fragments.length - 1;
+    const hasNextFragment = prev.fragmentIndex < currentSlide.steps.length - 1;
 
     if (hasNextFragment) {
       return {
@@ -241,7 +324,7 @@ class Presi {
     } else if (hasPrevSlide) {
       return {
         slideIndex: prev.slideIndex - 1,
-        fragmentIndex: this.slides[prev.slideIndex - 1].fragments.length - 1,
+        fragmentIndex: this.slides[prev.slideIndex - 1].steps.length - 1,
       };
     } else {
       return false;

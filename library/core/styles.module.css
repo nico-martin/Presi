@@ -26,10 +26,6 @@ body {
   width: 100%;
   aspect-ratio: var(--aspect-ratio);
 
-  h1 {
-    font-size: 2rem;
-  }
-
   :global(.fragment) {
     opacity: 0;
   }

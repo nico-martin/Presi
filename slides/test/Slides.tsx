@@ -1,25 +1,12 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
-import config from "./config.json";
+import SlideOne from "./slides/SlideOne.tsx";
 
 import { Wrapper, Slide } from "@presi/react";
 
 const App: React.FC = () => (
-  <Wrapper config={config} aspectRatio="16:9">
-    <Slide title="Title" notes={["Das sind meine Notes für die erste Seite"]}>
-      <p>Hello</p>
-      <p className="fragment">World 1</p>
-      <p className="fragment" data-fragment-index="1">
-        World 2
-      </p>
-      <p className="fragment">World 3</p>
-      <p className="fragment" data-fragment-index="7">
-        World 4
-      </p>
-      <p className="fragment" data-fragment-index="7">
-        World 5
-      </p>
-    </Slide>
+  <Wrapper aspectRatio="16:9">
+    <SlideOne />
     <Slide
       title="Slide 1"
       notes={[

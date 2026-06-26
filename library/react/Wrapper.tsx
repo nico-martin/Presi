@@ -1,10 +1,9 @@
 import React from "react";
-import { Presi } from "../core";
+import { Presi } from "@presi/core";
 
 const Wrapper: React.FC<{
   children: React.ReactElement | Array<React.ReactElement>;
   aspectRatio: `${number}:${number}`;
-  config: TalkConfig;
 }> = ({ children, aspectRatio }) => {
   const [presiInstance, setPresiInstance] = React.useState<Presi>(null);
   const [presiInstanceInit, setPresiInstanceInit] =

@@ -2,16 +2,20 @@
   "name": "presi",
   "version": "0.0.1",
   "description": "A modern presentation framework",
+  "private": true,
+  "packageManager": "pnpm@11.1.1",
   "main": "index.js",
   "scripts": {
-    "dev": "vite --config library/server/vite.config.ts",
-    "build": "tsc && vite build",
-    "preview": "vite preview",
-    "export": "ts-node ./library/export/index.ts"
+    "dev": "node scripts/dev.mjs",
+    "dev:lib": "node scripts/build.mjs --watch",
+    "dev:slides": "pnpm --filter @presi/slides-test dev",
+    "build": "node scripts/build.mjs"
   },
   "author": "Nico Martin <mail@nico.dev>",
   "license": "ISC",
   "dependencies": {
+    "@presi/core": "workspace:*",
+    "@presi/react": "workspace:*",
     "puppeteer": "^21.5.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"
@@ -23,18 +27,14 @@
     "@types/postcss-mixins": "^9.0.2",
     "@types/react": "^18.2.33",
     "@types/react-dom": "^18.2.14",
-    "@vitejs/plugin-react": "^4.1.0",
     "autoprefixer": "^10.4.16",
     "dotenv": "^16.3.1",
+    "esbuild": "^0.25.5",
     "postcss-mixins": "^9.0.4",
     "postcss-nested": "^6.0.1",
     "postcss-preset-env": "^9.2.0",
     "prettier": "^3.0.3",
     "ts-node": "^10.9.1",
-    "typescript": "^5.2.2",
-    "vite": "^4.5.0",
-    "vite-plugin-html-config": "^1.0.11",
-    "vite-plugin-svgr": "^4.1.0",
-    "vite-tsconfig-paths": "^4.2.1"
+    "typescript": "^5.2.2"
   }
 }
