@@ -107,12 +107,13 @@ export declare class Presi {
       `import type React from "react";
 
 export interface WrapperProps {
-  children: React.ReactElement | Array<React.ReactElement>;
+  children: React.ReactNode;
   aspectRatio: \`${"${number}:${number}"}\`;
 }
 
 export interface SlideProps {
-  children: React.ReactElement | Array<React.ReactElement>;
+  children: React.ReactNode;
+  className?: string;
   title?: string;
   notes?: Array<string>;
 }
@@ -124,11 +125,24 @@ export interface StepProps {
 
 export type SlideMountProps = Pick<StepProps, "run">;
 
+export interface PresiSlideProps {
+  title: string;
+}
+
+export interface PresiContextValue {
+  slideIndex: number;
+  stepIndex: number;
+  totalSlides: number;
+  totalSteps: number;
+  currentSlide: PresiSlideProps;
+}
+
 export declare const Wrapper: React.FC<WrapperProps>;
 export declare const Slide: React.FC<SlideProps>;
 export declare const Step: React.FC<StepProps>;
 export declare const SlideMount: React.FC<SlideMountProps>;
 export declare const useSlideMount: (run: () => void | (() => void)) => void;
+export declare const usePresi: () => PresiContextValue;
 `,
     ),
   ]);

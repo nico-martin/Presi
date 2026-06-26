@@ -207,6 +207,12 @@ class Presi {
       .slice(0, fragmentIndex + 1)
       .flatMap((step) => step.effects)
       .map((effect) => this.runEffect(effect.id));
+
+    const currentState = { slideIndex, fragmentIndex };
+    this.eventBus.publish("stateChange", {
+      currentState,
+      nextState: this.nextState(currentState) || currentState,
+    });
   };
 
   private getStepsFromSlide = (slide: HTMLElement): PresiTimelineStep[] => {
@@ -353,11 +359,6 @@ class Presi {
       });
     }
 
-    this.eventBus.publish("stateChange", {
-      currentState: nextState,
-      nextState: this.nextState(nextState) || nextState,
-    });
-
     if (!document.startViewTransition || !slideChanged) {
       window.location.hash = `#/${nextState.slideIndex}/${nextState.fragmentIndex}`;
       return;
@@ -375,6 +376,17 @@ class Presi {
 
   public getCurrentSlide = (): HTMLElement =>
     this.slides[this.getCurrentHashState().slideIndex || 0].slide;
+
+  public getTotalSlides = (): number => this.slides.length;
+
+  public getTotalSteps = (slideIndex = this.getCurrentHashStateSave().slideIndex): number =>
+    this.slides[slideIndex]?.steps.length || 0;
+
+  public getSlideProps = (slideIndex = this.getCurrentHashStateSave().slideIndex): {
+    title: string;
+  } => ({
+    title: this.slides[slideIndex]?.slide.getAttribute("data-title") || "",
+  });
 }
 
 export default Presi;

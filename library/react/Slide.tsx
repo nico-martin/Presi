@@ -3,13 +3,15 @@ import { registerPresiStep } from "@presi/core";
 import { consumePendingSlideMounts } from "./useSlideMount.ts";
 
 export interface SlideProps {
-  children: React.ReactElement | Array<React.ReactElement>;
+  children: React.ReactNode;
+  className?: string;
   title?: string;
   notes?: Array<string>;
 }
 
 const Slide: React.FC<SlideProps> = ({
   children,
+  className,
   title = "",
   notes = null,
 }) => {
@@ -18,6 +20,8 @@ const Slide: React.FC<SlideProps> = ({
 
   return (
     <section
+      className={className}
+      data-title={title}
       style={{
         border: "1px solid black",
       }}
@@ -25,7 +29,6 @@ const Slide: React.FC<SlideProps> = ({
       {slideMounts.map(({ id }) => (
         <span key={id} data-presi-step-id={id} data-step-index={0} hidden />
       ))}
-      <h1>{title}</h1>
       {children}
       {notes && (
         <aside>

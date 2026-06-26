@@ -1,34 +1,55 @@
 import React from "react";
 import { Presi } from "@presi/core";
+import { PresiContext, type PresiContextValue } from "./usePresi.ts";
 
 const Wrapper: React.FC<{
-  children: React.ReactElement | Array<React.ReactElement>;
+  children: React.ReactNode;
   aspectRatio: `${number}:${number}`;
 }> = ({ children, aspectRatio }) => {
-  const [presiInstance, setPresiInstance] = React.useState<Presi>(null);
-  const [presiInstanceInit, setPresiInstanceInit] =
-    React.useState<boolean>(false);
+  const [state, setState] = React.useState<PresiContextValue>({
+    slideIndex: 0,
+    stepIndex: 0,
+    totalSlides: 0,
+    totalSteps: 0,
+    currentSlide: {
+      title: "",
+    },
+  });
   const ref = React.useRef<HTMLDivElement>(null);
 
   React.useEffect(() => {
-    if (ref?.current && !presiInstanceInit) {
-      setPresiInstanceInit(true);
-      const p = new Presi(ref.current, { aspectRatio });
-      //p.onFragmentChange((data) => console.log("fragmentChanged", data));
-      //p.onSlideChange((data) => console.log("slideChange", data));
-      setPresiInstance(p);
-    }
-  }, [ref, presiInstanceInit]);
+    if (!ref.current) return;
 
-  React.useEffect(() => {
-    return () => {
-      presiInstance && presiInstance.cleanUp();
-      setPresiInstanceInit(false);
-      setPresiInstance(null);
+    const p = new Presi(ref.current, { aspectRatio });
+    const setPresiState = (currentState: {
+      slideIndex: number;
+      fragmentIndex: number;
+    }) => {
+      setState({
+        slideIndex: currentState.slideIndex,
+        stepIndex: currentState.fragmentIndex,
+        totalSlides: p.getTotalSlides(),
+        totalSteps: p.getTotalSteps(currentState.slideIndex),
+        currentSlide: p.getSlideProps(currentState.slideIndex),
+      });
     };
-  }, []);
 
-  return <div ref={ref}>{children}</div>;
+    setPresiState(p.getCurrentHashStateSave());
+    const unsubscribeStateChange = p.onStateChange(({ currentState }) => {
+      setPresiState(currentState);
+    });
+
+    return () => {
+      unsubscribeStateChange();
+      p.cleanUp();
+    };
+  }, [aspectRatio]);
+
+  return (
+    <PresiContext.Provider value={state}>
+      <div ref={ref}>{children}</div>
+    </PresiContext.Provider>
+  );
 };
 
 export default Wrapper;
