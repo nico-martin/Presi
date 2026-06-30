@@ -1,5 +1,5 @@
 {
-  "name": "presi",
+  "name": "presi-workspace",
   "version": "0.0.1",
   "description": "A modern presentation framework",
   "private": true,
@@ -14,9 +14,6 @@
   "author": "Nico Martin <mail@nico.dev>",
   "license": "ISC",
   "dependencies": {
-    "@presi/core": "workspace:*",
-    "@presi/react": "workspace:*",
-    "@presi/server": "workspace:*",
     "puppeteer": "^21.5.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"

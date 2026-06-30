@@ -8,12 +8,15 @@ The core idea is that presentations are normal frontend apps. Presi provides the
 
 This repo is a pnpm workspace.
 
-- `@presi/core` lives in `library/core` and builds to `packages/core`.
-- `@presi/react` lives in `library/react` and builds to `packages/react`.
-- `@presi/server` lives in `library/server` and builds to `packages/server`.
+- The single public package is `presi`, built to `packages/presi`.
+- Core runtime is imported from `presi/core`.
+- React bindings are imported from `presi/react`.
+- Server/dev/build APIs are imported from `presi/server`.
 - `@presi/slides-test` lives in `slides/test` and is the local example presentation app.
 
 Generated files under `packages/*/dist` are build output. Do not edit them manually.
+
+The npm package ships only `dist` and `skills` from `packages/presi`. Repository-only files like `AGENTS.md` and the local `slides/` examples are not shipped.
 
 ## Commands
 
@@ -21,6 +24,18 @@ Install dependencies:
 
 ```sh
 pnpm install
+```
+
+Create a new React presentation with the single-package CLI:
+
+```sh
+npx presi create react my-talk
+```
+
+Shortcut:
+
+```sh
+npx presi react my-talk
 ```
 
 Build the Presi packages:
@@ -49,9 +64,9 @@ pnpm --filter @presi/slides-test exec tsc --noEmit
 
 ## Architecture
 
-### `@presi/core`
+### `presi/core`
 
-`@presi/core` owns the browser presentation runtime.
+`presi/core` owns the browser presentation runtime.
 
 Responsibilities:
 
@@ -77,14 +92,14 @@ Important concepts:
 - `data-fragment-index` still works as a legacy alias.
 - JS effects are registered through the step registry and referenced in the DOM by `data-presi-step-id`.
 
-### `@presi/react`
+### `presi/react`
 
-`@presi/react` provides React bindings for Presi.
+`presi/react` provides React bindings for Presi.
 
 Primary imports:
 
 ```tsx
-import { Wrapper, Slide, Step, usePresi, useSlideMount } from "@presi/react";
+import { Wrapper, Slide, Step, usePresi, useSlideMount } from "presi/react";
 ```
 
 `Wrapper` creates the core `Presi` instance:
@@ -171,9 +186,9 @@ Current shape:
 }
 ```
 
-### `@presi/server`
+### `presi/server`
 
-`@presi/server` provides a framework-agnostic dev/build layer on top of Vite.
+`presi/server` provides a framework-agnostic dev/build layer on top of Vite.
 
 It does not know about React, Vue, Svelte, or any specific UI framework. Framework support is passed through Vite plugins in the Presi config.
 
@@ -190,7 +205,7 @@ A presentation app can define `presi.config.ts`:
 
 ```ts
 import react from "@vitejs/plugin-react";
-import { defineConfig } from "@presi/server";
+import { defineConfig } from "presi/server";
 
 export default defineConfig({
   entry: "Slides.tsx",
@@ -246,7 +261,7 @@ React example:
 ```tsx
 import React from "react";
 import ReactDOM from "react-dom/client";
-import { Wrapper, Slide } from "@presi/react";
+import { Wrapper, Slide } from "presi/react";
 
 const App = () => (
   <Wrapper aspectRatio="16:9">
@@ -259,16 +274,16 @@ export default function render(mountElement: HTMLElement) {
 }
 ```
 
-This keeps `@presi/server` framework agnostic. Vue, Svelte, Solid, vanilla JS, or any other frontend stack can use the same shape as long as the entry exports a render function.
+This keeps `presi/server` framework agnostic. Vue, Svelte, Solid, vanilla JS, or any other frontend stack can use the same shape as long as the entry exports a render function.
 
 ## Notes
 
 Speaker notes are controlled through a runtime build convention.
 
-`@presi/server` defines:
+`presi/server` defines:
 
 ```ts
-import.meta.env.PRESI_INCLUDE_NOTES
+PRESI_INCLUDE_NOTES
 ```
 
 By default:
@@ -294,16 +309,16 @@ Important files:
 - `slides/test/index.html`: custom HTML shell using `#app`.
 - `slides/test/Slides.tsx`: app entry; exports the render function.
 - `slides/test/slides/`: individual slide files.
-- `slides/test/theme/Slide.tsx`: themed wrapper around `@presi/react`'s `Slide`.
-- `slides/test/style.css`: imports fonts and Tailwind layers.
-- `slides/test/fonts/font.css`: Affogato font-face declarations.
+- `slides/test/theme/Slide.tsx`: themed wrapper around `presi/react`'s `Slide`.
+- `slides/test/style.css`: defines local variable fonts and Tailwind layers.
+- `slides/test/fonts/`: locally hosted variable font files.
 - `slides/test/tailwind.config.js`: Tailwind content/theme config.
 - `slides/test/postcss.config.js`: enables Tailwind and Autoprefixer.
 
 The app is intentionally a consumer of the built packages:
 
 ```tsx
-import { Wrapper, Slide } from "@presi/react";
+import { Wrapper, Slide } from "presi/react";
 ```
 
 It should behave like an external app using Presi.
@@ -313,11 +328,11 @@ It should behave like an external app using Presi.
 The test app imports styles from `slides/test/style.css`:
 
 ```css
-@import "./fonts/font.css";
-
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@font-face {
+  font-family: "Nunito Sans";
+  src: url("./fonts/NunitoSans-Variable.ttf") format("truetype");
+  font-display: block;
+}
 ```
 
 Tailwind scans:
@@ -327,10 +342,13 @@ Tailwind scans:
 - `slides/test/slides/**/*.{ts,tsx}`
 - `slides/test/theme/**/*.{ts,tsx}`
 
-The Affogato font family is available through Tailwind as:
+The test app self-hosts variable fonts under `slides/test/fonts` and references them from `slides/test/style.css` with `font-display: block` to avoid a flash of fallback text.
+
+Available Tailwind font families:
 
 ```tsx
-className="font-affogato"
+className="font-heading" // Nunito variable, headings
+className="font-body" // Nunito Sans variable, body text
 ```
 
 ## Development Flow
@@ -346,10 +364,10 @@ When files under `library/` change, esbuild rebuilds the workspace package outpu
 
 `scripts/build.mjs` bundles library sources with esbuild:
 
-- `library/core/index.ts` to `packages/core/dist/index.js`
-- `library/react/index.ts` to `packages/react/dist/index.js`
-- `library/server/index.ts` to `packages/server/dist/index.js`
-- `library/server/cli.ts` to `packages/server/dist/cli.js`
+- `library/core/index.ts` to `packages/presi/dist/core.js`
+- `library/react/index.ts` to `packages/presi/dist/react.js`
+- `library/server/index.ts` to `packages/presi/dist/server.js`
+- `library/server/cli.ts` to `packages/presi/dist/cli.js`
 
 The script also writes `.d.ts` files for public package types.
 
@@ -369,6 +387,15 @@ The slides build may print a stale Browserslist `caniuse-lite` warning. That war
 ## Current Limitations
 
 - PDF export is not implemented yet.
-- `@presi/server` currently supports dev and production SPA builds only.
+- `presi/server` currently supports dev and production SPA builds only.
 - `stepIndex` is still named `fragmentIndex` in parts of core internals for historical reasons.
 - Public type declarations are currently generated by `scripts/build.mjs` rather than emitted by `tsc`.
+
+## Skills
+
+Consumer-facing skills are authored in root `skills/` and shipped in the npm package under `skills/`.
+
+- `presi-core`: framework-agnostic Presi concepts, config, CLI, steps, notes, and builds.
+- `presi-react`: authoring, styling, and debugging React presentations using `presi/react`.
+
+`AGENTS.md` is intentionally not part of the package. It is only for contributors working on this repository.

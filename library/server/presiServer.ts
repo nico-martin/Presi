@@ -100,7 +100,7 @@ const createViteConfig = (config: PresiConfig, command: "dev" | "build"): Inline
   return mergeConfig(config.vite, {
     root: config.root,
     define: {
-      "import.meta.env.PRESI_INCLUDE_NOTES": JSON.stringify(String(includeNotes)),
+      PRESI_INCLUDE_NOTES: JSON.stringify(String(includeNotes)),
     },
     plugins: [createHtmlPlugin(config), presiPlugin(config)],
     server: {

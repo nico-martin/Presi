@@ -1,5 +1,5 @@
 import esbuild from "esbuild";
-import { mkdir, writeFile } from "node:fs/promises";
+import { cp, mkdir, rm, writeFile } from "node:fs/promises";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 
@@ -22,24 +22,29 @@ const rawPlugin = {
 
 const builds = [
   {
+    entryPoints: ["library/index.ts"],
+    outfile: "packages/presi/dist/index.js",
+    external: ["vite", "react", "react-dom"],
+  },
+  {
     entryPoints: ["library/core/index.ts"],
-    outfile: "packages/core/dist/index.js",
+    outfile: "packages/presi/dist/core.js",
     external: [],
   },
   {
     entryPoints: ["library/react/index.ts"],
-    outfile: "packages/react/dist/index.js",
-    external: ["@presi/core", "react", "react-dom"],
+    outfile: "packages/presi/dist/react.js",
+    external: ["presi/core", "react", "react-dom"],
   },
   {
     entryPoints: ["library/server/index.ts"],
-    outfile: "packages/server/dist/index.js",
+    outfile: "packages/presi/dist/server.js",
     external: ["vite"],
     platform: "node",
   },
   {
     entryPoints: ["library/server/cli.ts"],
-    outfile: "packages/server/dist/cli.js",
+    outfile: "packages/presi/dist/cli.js",
     external: ["vite"],
     platform: "node",
   },
@@ -57,14 +62,12 @@ const options = {
 
 const writeTypes = async () => {
   await Promise.all([
-    mkdir("packages/core/dist", { recursive: true }),
-    mkdir("packages/react/dist", { recursive: true }),
-    mkdir("packages/server/dist", { recursive: true }),
+    mkdir("packages/presi/dist", { recursive: true }),
   ]);
 
   await Promise.all([
     writeFile(
-      "packages/core/dist/index.d.ts",
+      "packages/presi/dist/core.d.ts",
       `export interface PresiConfig {
   aspectRatio?: \`${"${number}:${number}"}\`;
   calculateFontSize?: () => number;
@@ -116,7 +119,7 @@ export declare class Presi {
 `,
     ),
     writeFile(
-      "packages/react/dist/index.d.ts",
+      "packages/presi/dist/react.d.ts",
       `import type React from "react";
 
 export interface WrapperProps {
@@ -159,7 +162,7 @@ export declare const usePresi: () => PresiContextValue;
 `,
     ),
     writeFile(
-      "packages/server/dist/index.d.ts",
+      "packages/presi/dist/server.d.ts",
       `import type { InlineConfig } from "vite";
 
 export interface PresiConfig {
@@ -194,7 +197,77 @@ export declare const devPresentation: (options?: { configFile?: string }) => Pro
 export declare const buildPresentation: (options?: { configFile?: string }) => Promise<void>;
 `,
     ),
+    writeFile(
+      "packages/presi/dist/index.d.ts",
+      `export * from "./core.js";
+`,
+    ),
   ]);
+};
+
+const copySkills = async () => {
+  await rm("packages/presi/skills", { recursive: true, force: true });
+  await cp("skills", "packages/presi/skills", { recursive: true });
+};
+
+const writePackageJson = async () => {
+  await mkdir("packages/presi", { recursive: true });
+  await writeFile(
+    "packages/presi/package.json",
+    `${JSON.stringify(
+      {
+        name: "presi",
+        version: "0.0.1",
+        type: "module",
+        bin: {
+          presi: "./dist/cli.js",
+        },
+        main: "./dist/index.js",
+        module: "./dist/index.js",
+        types: "./dist/index.d.ts",
+        exports: {
+          ".": {
+            types: "./dist/index.d.ts",
+            import: "./dist/index.js",
+          },
+          "./core": {
+            types: "./dist/core.d.ts",
+            import: "./dist/core.js",
+          },
+          "./react": {
+            types: "./dist/react.d.ts",
+            import: "./dist/react.js",
+          },
+          "./server": {
+            types: "./dist/server.d.ts",
+            import: "./dist/server.js",
+          },
+        },
+        files: ["dist", "skills"],
+        dependencies: {
+          vite: "^4.5.0",
+        },
+        peerDependencies: {
+          react: "^18.2.0",
+          "react-dom": "^18.2.0",
+        },
+        peerDependenciesMeta: {
+          react: {
+            optional: true,
+          },
+          "react-dom": {
+            optional: true,
+          },
+        },
+      },
+      null,
+      2,
+    )}\n`,
+  );
+};
+
+const writePackageFiles = async () => {
+  await Promise.all([writeTypes(), copySkills(), writePackageJson()]);
 };
 
 if (watch) {
@@ -203,9 +276,9 @@ if (watch) {
   );
 
   await Promise.all(contexts.map((context) => context.watch()));
-  await writeTypes();
+  await writePackageFiles();
   console.log("Watching library bundles...");
 } else {
   await Promise.all(builds.map((build) => esbuild.build({ ...options, ...build })));
-  await writeTypes();
+  await writePackageFiles();
 }

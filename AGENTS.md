@@ -1,8 +1,12 @@
-# Presi Project Notes
+# Presi Contributor Notes
+
+This file is for agents working on the Presi library repository itself. It is not shipped in the npm package.
+
+For agents working with Presi in a presentation app, use the consumer skills under `skills/`. The build copies them into `packages/presi/skills` before npm packaging.
 
 ## Overview
 
-Presi is a presentation framework built as local pnpm workspace packages. The library code lives under `library/`, is bundled with esbuild into package outputs under `packages/`, and is consumed by example/demo slides in `slides/test`.
+Presi is a presentation framework built as a single local pnpm workspace package. The library code lives under `library/`, is bundled with esbuild into `packages/presi`, and is consumed by example/demo slides in `slides/test`.
 
 Use `pnpm` for all package operations.
 
@@ -10,10 +14,10 @@ Use `pnpm` for all package operations.
 
 The workspace is defined in `pnpm-workspace.yaml`.
 
-Package outputs:
+Package output:
 
-- `packages/core` publishes/represents `@presi/core`.
-- `packages/react` publishes/represents `@presi/react`.
+- `packages/presi` publishes/represents the single public `presi` package.
+- Public subpath imports are `presi/core`, `presi/react`, and `presi/server`.
 - `slides/test` is a Vite demo app package named `@presi/slides-test`.
 
 The root package is private and is only used to coordinate development scripts and dependencies.
@@ -58,7 +62,7 @@ React package responsibilities:
 Primary public imports:
 
 ```tsx
-import { Wrapper, Slide, Step, useSlideMount, usePresi } from "@presi/react";
+import { Wrapper, Slide, Step, useSlideMount, usePresi } from "presi/react";
 ```
 
 `usePresi()` currently returns:
@@ -85,8 +89,10 @@ pnpm build
 
 The build script is `scripts/build.mjs`. It bundles:
 
-- `library/core/index.ts` to `packages/core/dist/index.js`
-- `library/react/index.ts` to `packages/react/dist/index.js`
+- `library/core/index.ts` to `packages/presi/dist/core.js`
+- `library/react/index.ts` to `packages/presi/dist/react.js`
+- `library/server/index.ts` to `packages/presi/dist/server.js`
+- `library/server/cli.ts` to `packages/presi/dist/cli.js`
 
 It also writes the public `.d.ts` files for both packages.
 
@@ -105,14 +111,14 @@ This runs:
 - `node scripts/build.mjs --watch`
 - `pnpm --filter @presi/slides-test dev`
 
-The library watcher rebuilds `packages/core/dist` and `packages/react/dist` whenever `library/` changes. The Vite demo app consumes the workspace packages, so it picks up the latest built output.
+The library watcher rebuilds `packages/presi/dist` whenever `library/` changes. The Vite demo app consumes the workspace package, so it picks up the latest built output.
 
 ## Demo App: `slides/test`
 
 `slides/test` is the local consumer app. It should behave like an external app using the packages:
 
 ```tsx
-import { Wrapper, Slide } from "@presi/react";
+import { Wrapper, Slide } from "presi/react";
 ```
 
 It is a Vite React app with Tailwind CSS.
@@ -121,16 +127,16 @@ Important files:
 
 - `slides/test/Slides.tsx` is the app entry.
 - `slides/test/slides/` contains individual slide files.
-- `slides/test/theme/Slide.tsx` wraps `@presi/react`'s `Slide` with theme defaults.
+- `slides/test/theme/Slide.tsx` wraps `presi/react`'s `Slide` with theme defaults.
 - `slides/test/style.css` imports fonts and Tailwind layers.
-- `slides/test/fonts/font.css` defines the Affogato font family.
+- `slides/test/fonts/` contains locally hosted Nunito and Nunito Sans variable fonts.
 - `slides/test/tailwind.config.js` controls Tailwind content scanning and theme extensions.
 
 ## Styling
 
 The demo app imports Tailwind through `slides/test/style.css`.
 
-The theme wrapper can style the actual slide surface because `@presi/react`'s `Slide` accepts `className` and forwards it to the underlying `<section>`.
+The theme wrapper can style the actual slide surface because `presi/react`'s `Slide` accepts `className` and forwards it to the underlying `<section>`.
 
 Use Tailwind classes in files matched by `slides/test/tailwind.config.js`:
 
@@ -153,8 +159,18 @@ pnpm install --frozen-lockfile
 
 ## Implementation Notes
 
-- Keep package source in `library/`; generated package output belongs in `packages/*/dist`.
-- Keep `@presi/react` consuming `@presi/core` as an external workspace dependency.
+- Keep package source in `library/`; generated package output belongs in `packages/presi/dist`.
+- Keep React bindings importing core through `presi/core`, matching the published subpath API.
 - Avoid reintroducing Vite for library builds; Vite is only for `slides/test`.
 - `useSlideMount` associates with the next rendered `Slide`; call it at the top of a slide component before returning `<Slide>`.
 - A `useSlideMount` callback may return a cleanup function. Core runs that cleanup when the step is no longer active or when the presentation unmounts.
+
+## Packaging
+
+- The npm package is `packages/presi`.
+- `packages/presi/package.json` controls what ships to npm.
+- Source skills live in root `skills/`.
+- The build copies root `skills/` to `packages/presi/skills`.
+- Ship `dist` and generated `skills`.
+- Do not ship `AGENTS.md`; it is repository-only contributor guidance.
+- Do not ship `slides/`; it is the local example app.

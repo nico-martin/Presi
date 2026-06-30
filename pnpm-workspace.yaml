@@ -1,5 +1,4 @@
 packages:
-  - packages/*
   - slides/test
 
 allowBuilds:

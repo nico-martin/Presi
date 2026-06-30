@@ -1,10 +1,12 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import SlideOne from "./slides/SlideOne.tsx";
+import TypographySlide from "./slides/TypographySlide.tsx";
 import "./style.css";
 
-import { Wrapper, usePresi } from "@presi/react";
+import { Wrapper, usePresi } from "presi/react";
 import Slide from "./theme/Slide.tsx";
+
 function Bkg() {
   const { slideIndex, currentSlide, stepIndex, totalSteps, totalSlides } =
     usePresi();
@@ -22,6 +24,7 @@ function Bkg() {
 const App: React.FC = () => (
   <Wrapper aspectRatio="16:9">
     <SlideOne />
+    <TypographySlide />
     <Slide
       title="Slide 1"
       notes={[

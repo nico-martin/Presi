@@ -1,11 +1,21 @@
 import react from "@vitejs/plugin-react";
-import { defineConfig } from "@presi/server";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+import { defineConfig } from "../../library/server/index.ts";
+
+const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 
 export default defineConfig({
   entry: "Slides.tsx",
   title: "Presi Test Slides",
   vite: {
     plugins: [react()],
+    resolve: {
+      alias: {
+        "presi/core": resolve(repoRoot, "library/core/index.ts"),
+        "presi/react": resolve(repoRoot, "library/react/index.ts"),
+      },
+    },
   },
   dev: {
     port: 3000,

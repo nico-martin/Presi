@@ -1,4 +1,4 @@
-import { Step, useSlideMount } from "@presi/react";
+import { Step, useSlideMount } from "presi/react";
 import Slide from "../theme/Slide.tsx";
 
 export default function SlideOne() {

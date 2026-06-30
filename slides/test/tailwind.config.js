@@ -9,7 +9,8 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        affogato: ["Affogato", "sans-serif"],
+        body: ["Nunito Sans", "sans-serif"],
+        heading: ["Nunito", "sans-serif"],
       },
     },
   },

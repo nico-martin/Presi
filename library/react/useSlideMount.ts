@@ -1,5 +1,5 @@
 import React from "react";
-import { unregisterPresiStep, type PresiStepFunction } from "@presi/core";
+import { unregisterPresiStep, type PresiStepFunction } from "presi/core";
 
 interface PendingSlideMount {
   id: string;

@@ -1,10 +1,11 @@
 import React from "react";
-import { registerPresiStep } from "@presi/core";
+import { registerPresiStep } from "presi/core";
 import { consumePendingSlideMounts } from "./useSlideMount.ts";
 
+declare const PRESI_INCLUDE_NOTES: string | undefined;
+
 const includeNotes = () =>
-  ((import.meta as unknown as { env?: { PRESI_INCLUDE_NOTES?: string } }).env
-    ?.PRESI_INCLUDE_NOTES ?? "true") !== "false";
+  typeof PRESI_INCLUDE_NOTES === "undefined" || PRESI_INCLUDE_NOTES !== "false";
 
 export interface SlideProps {
   children: React.ReactNode;

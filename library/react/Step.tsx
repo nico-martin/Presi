@@ -1,5 +1,5 @@
 import React from "react";
-import { registerPresiStep, unregisterPresiStep } from "@presi/core";
+import { registerPresiStep, unregisterPresiStep } from "presi/core";
 
 export interface StepProps {
   stepIndex?: number;

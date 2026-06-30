@@ -1,5 +1,5 @@
 import React from "react";
-import { Presi } from "@presi/core";
+import { Presi } from "presi/core";
 import { PresiContext, type PresiContextValue } from "./usePresi.ts";
 
 const Wrapper: React.FC<{
