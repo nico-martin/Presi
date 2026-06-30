@@ -31,6 +31,18 @@ const builds = [
     outfile: "packages/react/dist/index.js",
     external: ["@presi/core", "react", "react-dom"],
   },
+  {
+    entryPoints: ["library/server/index.ts"],
+    outfile: "packages/server/dist/index.js",
+    external: ["vite"],
+    platform: "node",
+  },
+  {
+    entryPoints: ["library/server/cli.ts"],
+    outfile: "packages/server/dist/cli.js",
+    external: ["vite"],
+    platform: "node",
+  },
 ];
 
 const options = {
@@ -47,6 +59,7 @@ const writeTypes = async () => {
   await Promise.all([
     mkdir("packages/core/dist", { recursive: true }),
     mkdir("packages/react/dist", { recursive: true }),
+    mkdir("packages/server/dist", { recursive: true }),
   ]);
 
   await Promise.all([
@@ -143,6 +156,42 @@ export declare const Step: React.FC<StepProps>;
 export declare const SlideMount: React.FC<SlideMountProps>;
 export declare const useSlideMount: (run: () => void | (() => void)) => void;
 export declare const usePresi: () => PresiContextValue;
+`,
+    ),
+    writeFile(
+      "packages/server/dist/index.d.ts",
+      `import type { InlineConfig } from "vite";
+
+export interface PresiConfig {
+  root: string;
+  entry: string;
+  title: string;
+  resolveMountElement: () => HTMLElement | null;
+  vite: InlineConfig;
+  dev: {
+    port: number;
+    host: string;
+    includeNotes: boolean;
+  };
+  build: {
+    outDir: string;
+    includeNotes: boolean;
+  };
+}
+
+export interface PresiUserConfig {
+  root?: string;
+  entry?: string;
+  title?: string;
+  resolveMountElement?: () => HTMLElement | null;
+  vite?: InlineConfig;
+  dev?: Partial<PresiConfig["dev"]>;
+  build?: Partial<PresiConfig["build"]>;
+}
+
+export declare const defineConfig: (config?: PresiUserConfig) => PresiConfig;
+export declare const devPresentation: (options?: { configFile?: string }) => Promise<void>;
+export declare const buildPresentation: (options?: { configFile?: string }) => Promise<void>;
 `,
     ),
   ]);

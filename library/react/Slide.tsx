@@ -2,6 +2,10 @@ import React from "react";
 import { registerPresiStep } from "@presi/core";
 import { consumePendingSlideMounts } from "./useSlideMount.ts";
 
+const includeNotes = () =>
+  ((import.meta as unknown as { env?: { PRESI_INCLUDE_NOTES?: string } }).env
+    ?.PRESI_INCLUDE_NOTES ?? "true") !== "false";
+
 export interface SlideProps {
   children: React.ReactNode;
   className?: string;
@@ -30,7 +34,7 @@ const Slide: React.FC<SlideProps> = ({
         <span key={id} data-presi-step-id={id} data-step-index={0} hidden />
       ))}
       {children}
-      {notes && (
+      {includeNotes() && notes && (
         <aside>
           {notes.map((note, i) => (
             <p key={i}>{note}</p>

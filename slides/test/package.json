@@ -4,11 +4,12 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite --host 0.0.0.0",
-    "build": "vite build"
+    "dev": "node ../../packages/server/dist/cli.js dev",
+    "build": "node ../../packages/server/dist/cli.js build"
   },
   "dependencies": {
     "@presi/react": "workspace:*",
+    "@presi/server": "workspace:*",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"
   },

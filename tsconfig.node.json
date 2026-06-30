@@ -12,7 +12,6 @@
   "include": [
     "library/server",
     "library/export",
-    "app.json",
-    "presi.config.ts"
+    "app.json"
   ]
 }

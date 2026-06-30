@@ -1,22 +1,50 @@
+import type { InlineConfig, PluginOption } from "vite";
+
 export interface PresiConfig {
-  slidesRoot: string;
-  port: number;
-  https:
-    | {
-        key: string | Buffer;
-        cert: string | Buffer;
-      }
-    | false;
+  root: string;
+  entry: string;
+  title: string;
+  resolveMountElement: () => HTMLElement | null;
+  vite: InlineConfig;
+  dev: {
+    port: number;
+    host: string;
+    includeNotes: boolean;
+  };
+  build: {
+    outDir: string;
+    includeNotes: boolean;
+  };
 }
 
-export default (config: Partial<PresiConfig>): PresiConfig => {
-  return {
-    slidesRoot: config.slidesRoot || "",
-    port: config?.port
-      ? config.port
-      : process.env.PORT
-      ? parseInt(process.env.PORT)
-      : 3000,
-    https: config?.https || false,
+export interface PresiUserConfig {
+  root?: string;
+  entry?: string;
+  title?: string;
+  resolveMountElement?: () => HTMLElement | null;
+  vite?: InlineConfig & {
+    plugins?: PluginOption[];
   };
-};
+  dev?: Partial<PresiConfig["dev"]>;
+  build?: Partial<PresiConfig["build"]>;
+}
+
+const defineConfig = (config: PresiUserConfig = {}): PresiConfig => ({
+  root: config.root || ".",
+  entry: config.entry || "Slides.tsx",
+  title: config.title || "Presi",
+  resolveMountElement:
+    config.resolveMountElement || (() => document.getElementById("presi")),
+  vite: config.vite || {},
+  dev: {
+    port: config.dev?.port || (process.env.PORT ? parseInt(process.env.PORT) : 3000),
+    host: config.dev?.host || "0.0.0.0",
+    includeNotes: config.dev?.includeNotes ?? true,
+  },
+  build: {
+    outDir: config.build?.outDir || "dist",
+    includeNotes: config.build?.includeNotes ?? false,
+  },
+});
+
+export default defineConfig;

@@ -1,4 +1,13 @@
-import { spawn } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
+
+const initialBuild = spawnSync("node", ["scripts/build.mjs"], {
+  stdio: "inherit",
+  shell: process.platform === "win32",
+});
+
+if (initialBuild.status !== 0) {
+  process.exit(initialBuild.status || 1);
+}
 
 const commands = [
   ["node", ["scripts/build.mjs", "--watch"]],

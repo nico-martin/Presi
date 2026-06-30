@@ -40,11 +40,9 @@
     "library/react",
     "library/core",
     "library/server",
-    "slides",
-    "presi.config.ts"
+    "slides"
   ],
   "ts-node": {
     "esm": true
   }
 }
-

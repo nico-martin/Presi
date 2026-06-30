@@ -60,5 +60,6 @@ const App: React.FC = () => (
   </Wrapper>
 );
 
-const root = document.getElementById("app");
-root && ReactDOM.createRoot(root).render(<App />);
+export default function render(mountElement: HTMLElement) {
+  ReactDOM.createRoot(mountElement).render(<App />);
+}

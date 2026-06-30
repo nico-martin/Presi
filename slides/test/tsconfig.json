@@ -8,6 +8,8 @@
   },
   "include": [
     "Slides.tsx",
-    "vite.config.ts"
+    "slides/**/*.tsx",
+    "theme/**/*.tsx",
+    "presi.config.ts"
   ]
 }
