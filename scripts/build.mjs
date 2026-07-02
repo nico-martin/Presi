@@ -273,7 +273,7 @@ const writePackageJson = async () => {
         },
         homepage: "https://github.com/nico-martin/presi#readme",
         bin: {
-          "presi-js": "./dist/cli.js",
+          "presi-js": "dist/cli.js",
         },
         main: "./dist/index.js",
         module: "./dist/index.js",

@@ -20,6 +20,7 @@ const run = (command, args, options = {}) => {
   }
 };
 
+run("npm", ["whoami", "--registry", registry]);
 run("pnpm", ["build"]);
 
 const packageJson = JSON.parse(
