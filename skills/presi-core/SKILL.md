@@ -123,9 +123,9 @@ Use `data-step-index` for explicit positioning. Avoid `data-fragment-index` in n
 
 Slides and step elements have no transition by default. Add `data-transition-in` or `data-transition-out` to opt in.
 
-Supported values are `fade`, `fade-up`, `fade-left`, `fade-right`, `fade-down`, `fade-grow`, `fade-up-grow`, `fade-left-grow`, `fade-right-grow`, and `fade-down-grow`.
+Supported values are `fade`, `fade-up`, `fade-left`, `fade-right`, `fade-down`, `fade-grow`, `fade-up-grow`, `fade-left-grow`, `fade-right-grow`, `fade-down-grow`, and `pop`.
 
-Transitions are always `200ms` with `cubic-bezier(.2, .85, .25, 1)`. Multiple elements in one step are staggered by `100ms` in DOM order. Use `data-transition-in-order` or `data-transition-out-order` to override sequencing.
+Transitions use configured timing by default. `pop` runs for `400ms` with `cubic-bezier(.34, 1.45, .5, 1)`. Multiple elements in one step are staggered in DOM order. Use `data-transition-in-order` or `data-transition-out-order` to override sequencing.
 
 The constants and attribute names are exported as `PRESI_TRANSITION_CONFIG` from `presi-js/core`.
 

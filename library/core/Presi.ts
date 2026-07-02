@@ -41,9 +41,21 @@ export interface PresiConfig {
   transition?: PresiTransitionConfig;
 }
 
-export const PRESI_TRANSITION_CONFIG = {
-  duration: 400,
-  delay: 200,
+export const PRESI_TRANSITION_CONFIG: {
+  duration: number;
+  delay: number;
+  easing: string;
+  attributes: PresiTransitionAttributes;
+  transitions: Record<
+    string,
+    {
+      keyframes: readonly Readonly<Record<string, string | number>>[];
+      easing?: string;
+    }
+  >;
+} = {
+  duration: 600,
+  delay: 300,
   easing: "cubic-bezier(.2, .85, .25, 1)",
   attributes: {
     in: "data-transition-in",
@@ -52,16 +64,84 @@ export const PRESI_TRANSITION_CONFIG = {
     outOrder: "data-transition-out-order",
   },
   transitions: {
-    fade: { x: "0", y: "0", scale: 1 },
-    "fade-up": { x: "0", y: "2rem", scale: 1 },
-    "fade-left": { x: "2rem", y: "0", scale: 1 },
-    "fade-right": { x: "-2rem", y: "0", scale: 1 },
-    "fade-down": { x: "0", y: "-2rem", scale: 1 },
-    "fade-grow": { x: "0", y: "0", scale: 0.5 },
-    "fade-up-grow": { x: "0", y: "2rem", scale: 0.5 },
-    "fade-left-grow": { x: "2rem", y: "0", scale: 0.5 },
-    "fade-right-grow": { x: "-2rem", y: "0", scale: 0.5 },
-    "fade-down-grow": { x: "0", y: "-2rem", scale: 0.5 },
+    fade: {
+      keyframes: [
+        { opacity: 0, transform: "translate(0, 0) scale(1)" },
+        { opacity: 1, transform: "translate(0, 0) scale(1)" },
+      ],
+    },
+    "fade-up": {
+      keyframes: [
+        { opacity: 0, transform: "translate(0, 2rem) scale(1)" },
+        { opacity: 1, transform: "translate(0, 0) scale(1)" },
+      ],
+    },
+    "fade-left": {
+      keyframes: [
+        { opacity: 0, transform: "translate(2rem, 0) scale(1)" },
+        { opacity: 1, transform: "translate(0, 0) scale(1)" },
+      ],
+    },
+    "fade-right": {
+      keyframes: [
+        { opacity: 0, transform: "translate(-2rem, 0) scale(1)" },
+        { opacity: 1, transform: "translate(0, 0) scale(1)" },
+      ],
+    },
+    "fade-down": {
+      keyframes: [
+        { opacity: 0, transform: "translate(0, -2rem) scale(1)" },
+        { opacity: 1, transform: "translate(0, 0) scale(1)" },
+      ],
+    },
+    "fade-grow": {
+      keyframes: [
+        { opacity: 0, transform: "translate(0, 0) scale(0.5)" },
+        { opacity: 1, transform: "translate(0, 0) scale(1)" },
+      ],
+    },
+    "fade-up-grow": {
+      keyframes: [
+        { opacity: 0, transform: "translate(0, 2rem) scale(0.5)" },
+        { opacity: 1, transform: "translate(0, 0) scale(1)" },
+      ],
+    },
+    "fade-left-grow": {
+      keyframes: [
+        { opacity: 0, transform: "translate(2rem, 0) scale(0.5)" },
+        { opacity: 1, transform: "translate(0, 0) scale(1)" },
+      ],
+    },
+    "fade-right-grow": {
+      keyframes: [
+        { opacity: 0, transform: "translate(-2rem, 0) scale(0.5)" },
+        { opacity: 1, transform: "translate(0, 0) scale(1)" },
+      ],
+    },
+    "fade-down-grow": {
+      keyframes: [
+        { opacity: 0, transform: "translate(0, -2rem) scale(0.5)" },
+        { opacity: 1, transform: "translate(0, 0) scale(1)" },
+      ],
+    },
+    pop: {
+      keyframes: [
+        {
+          opacity: 0,
+          transform: "translate(0, 0) scale(.45)",
+        },
+        {
+          opacity: 1,
+          transform: "translate(0, 0) scale(1.1)",
+          offset: 0.62,
+        },
+        {
+          opacity: 1,
+          transform: "translate(0, 0) scale(1)",
+        },
+      ],
+      easing: "cubic-bezier(.34, 1.45, .5, 1)",
+    },
   },
 } as const;
 
@@ -131,6 +211,7 @@ class Presi {
     steps: PresiTimelineStep[];
   }> = [];
   private activeEffects = new Map<string, PresiStepCleanup>();
+  private animatedElements = new WeakSet<HTMLElement>();
   private currentState: PresiHashState | null = null;
   private readonly transitionConfig: PresiResolvedTransitionConfig;
 
@@ -260,6 +341,9 @@ class Presi {
       slide.style.display = "none";
     });
     const currentSlide = this.slides[slideIndex];
+    if (prevState?.slideIndex !== slideIndex) {
+      this.resetAnimatedStyles(currentSlide.slide);
+    }
     currentSlide.slide.style.display = "block";
 
     const activeEffectIds = new Set<string>();
@@ -318,7 +402,7 @@ class Presi {
     if (currentStep === null) return false;
     return direction === "in"
       ? stepIndex <= currentStep
-      : stepIndex > currentStep;
+      : stepIndex === 0 || stepIndex > currentStep;
   };
 
   private getStepsFromSlide = (slide: HTMLElement): PresiTimelineStep[] => {
@@ -493,6 +577,7 @@ class Presi {
     const elements: HTMLElement[] = [];
     if (prevState.slideIndex !== nextState.slideIndex) {
       elements.push(prevSlide.slide);
+      elements.push(...this.getVisibleTransitionOutElements(prevSlide.slide));
     }
 
     if (prevState.slideIndex === nextState.slideIndex) {
@@ -517,6 +602,15 @@ class Presi {
 
     await this.animateTransitionOut(elements);
   };
+
+  private getVisibleTransitionOutElements = (
+    slide: HTMLElement,
+  ): HTMLElement[] =>
+    Array.from(
+      slide.querySelectorAll<HTMLElement>(
+        `[${this.transitionConfig.attributes.out}]`,
+      ),
+    ).filter((element) => !element.classList.contains("hidden"));
 
   private getTransitionName = (
     element: HTMLElement,
@@ -590,40 +684,73 @@ class Presi {
         if (!transitionName) return null;
 
         const transition = PRESI_TRANSITION_CONFIG.transitions[transitionName];
-        const hiddenFrame = {
-          opacity: 0,
-          transform: `translate(${
-            direction === "in" ? transition.x : this.invertOffset(transition.x)
-          }, ${
-            direction === "in" ? transition.y : this.invertOffset(transition.y)
-          }) scale(${transition.scale})`,
-        };
-        const visibleFrame = {
-          opacity: 1,
-          transform: "translate(0, 0) scale(1)",
-        };
-
-        return element.animate(
-          direction === "in"
-            ? [hiddenFrame, visibleFrame]
-            : [visibleFrame, hiddenFrame],
-          {
-            duration: this.transitionConfig.duration,
-            delay: index * this.transitionConfig.delay,
-            easing: this.transitionConfig.easing,
-            fill: "both",
-          },
+        const keyframes = this.getTransitionKeyframes(
+          transition.keyframes,
+          direction,
         );
+
+        return {
+          animation: element.animate(
+            direction === "in" ? keyframes : keyframes.reverse(),
+            {
+              duration: this.transitionConfig.duration,
+              delay: index * this.transitionConfig.delay,
+              easing: transition.easing ?? this.transitionConfig.easing,
+              fill: "both",
+            },
+          ),
+          element,
+        };
       })
-      .filter((animation): animation is Animation => Boolean(animation));
+      .filter(
+        (entry): entry is { animation: Animation; element: HTMLElement } =>
+          Boolean(entry),
+      );
 
     await Promise.all(
-      animations.map((animation) =>
+      animations.map(({ animation, element }) =>
         animation.finished.finally(() => {
           animation.commitStyles();
+          this.animatedElements.add(element);
           animation.cancel();
         }),
       ),
+    );
+  };
+
+  private resetAnimatedStyles = (slide: HTMLElement) => {
+    [slide, ...Array.from(slide.querySelectorAll<HTMLElement>("*"))].map(
+      (element) => {
+        if (!this.animatedElements.has(element)) return;
+
+        element.style.opacity = "";
+        element.style.transform = "";
+      },
+    );
+  };
+
+  private getTransitionKeyframes = (
+    keyframes: readonly Readonly<Record<string, string | number>>[],
+    direction: "in" | "out",
+  ): Keyframe[] => {
+    return keyframes.map((frame) => ({
+      ...frame,
+      transform:
+        direction === "out" && typeof frame.transform === "string"
+          ? this.invertTranslateTransform(frame.transform)
+          : frame.transform,
+    }));
+  };
+
+  private invertTranslateTransform = (transform: string): string => {
+    const translateMatch = transform.match(/translate\(([^,]+),\s*([^\)]+)\)/);
+    if (!translateMatch) return transform;
+
+    return transform.replace(
+      translateMatch[0],
+      `translate(${this.invertOffset(translateMatch[1])}, ${this.invertOffset(
+        translateMatch[2],
+      )})`,
     );
   };
 

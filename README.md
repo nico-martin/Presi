@@ -195,8 +195,9 @@ Supported transition values:
 - `fade-left-grow`
 - `fade-right-grow`
 - `fade-down-grow`
+- `pop`
 
-All transitions run for `200ms` with `cubic-bezier(.2, .85, .25, 1)`. Multiple elements entering or leaving in the same step are staggered by `100ms` in DOM order. Override order with `data-transition-in-order` or `data-transition-out-order`.
+Transitions use the configured timing by default. `pop` runs for `400ms` with `cubic-bezier(.34, 1.45, .5, 1)`. Multiple elements entering or leaving in the same step are staggered in DOM order. Override order with `data-transition-in-order` or `data-transition-out-order`.
 
 The transition constants and attribute names are exported from `presi-js/core` as `PRESI_TRANSITION_CONFIG`.
 

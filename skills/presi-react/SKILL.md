@@ -116,7 +116,7 @@ Transitions are opt-in. Add `data-transition-in` or `data-transition-out` to sli
 </Slide>
 ```
 
-Supported values are `fade`, `fade-up`, `fade-left`, `fade-right`, `fade-down`, `fade-grow`, `fade-up-grow`, `fade-left-grow`, `fade-right-grow`, and `fade-down-grow`.
+Supported values are `fade`, `fade-up`, `fade-left`, `fade-right`, `fade-down`, `fade-grow`, `fade-up-grow`, `fade-left-grow`, `fade-right-grow`, `fade-down-grow`, and `pop`.
 
 Use `data-transition-in-order` or `data-transition-out-order` to override the default DOM-order stagger.
 

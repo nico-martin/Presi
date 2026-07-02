@@ -4,6 +4,9 @@ import Slide from "../theme/Slide.tsx";
 export default function SlideOne() {
   return (
     <>
+      <Slide>
+        <p data-transition-out="fade-left">test</p>
+      </Slide>
       <Slide
         title="Slide 1"
         notes={["Das sind meine Notes für die erste Seite"]}
@@ -14,9 +17,9 @@ export default function SlideOne() {
         <p
           className="fragment font-bold text-emerald-600"
           data-step-index="1"
-          data-transition-in="fade-up"
+          data-transition-out="fade-left"
         >
-          World 1
+          <span>World 1</span>
         </p>
         <Step stepIndex={2} run={() => console.log("hello from Presi step")} />
         <p
@@ -54,26 +57,36 @@ export default function SlideOne() {
         notes={["Das sind meine Notes für die erste Seite"]}
         data-transition-out="fade-left"
       >
-        <p className="font-bold text-emerald-600" data-transition-in="fade-up">
-          World 1
-        </p>
-        <Step stepIndex={2} run={() => console.log("hello from Presi step")} />
-        <p className="font-medium" data-transition-in="fade-left-grow">
-          World 2
-        </p>
-        <p className="  font-light" data-transition-in="fade-right">
-          World 3
-        </p>
-        <p className=" font-black" data-transition-in="fade-up-grow">
-          World 4
-        </p>
-        <p
-          className="  font-black"
-          data-transition-in="fade-up-grow"
-          data-transition-in-order="0"
-        >
-          World 5
-        </p>
+        <div className="flex flex-col items-start gap-4">
+          <p className="font-bold text-emerald-600">
+            <span
+              className="inline-block origin-center"
+              data-transition-in="pop"
+            >
+              World 1
+            </span>
+          </p>
+          <Step
+            stepIndex={2}
+            run={() => console.log("hello from Presi step")}
+          />
+          <p className="font-medium inline-block" data-transition-in="pop">
+            World 2
+          </p>
+          <p className="  font-light" data-transition-in="pop">
+            World 3
+          </p>
+          <p className=" font-black" data-transition-in="pop">
+            World 4
+          </p>
+          <p
+            className="  font-black"
+            data-transition-in="pop"
+            data-transition-in-order="0"
+          >
+            World 5
+          </p>
+        </div>
       </Slide>
     </>
   );
