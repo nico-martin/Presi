@@ -1,16 +1,24 @@
-import { Slide as PresiSlide } from "presi/react";
-import { ReactNode } from "react";
+import { Slide as PresiSlide } from "presi-js/react";
+import { ComponentProps, ReactNode } from "react";
+
+type ThemeSlideProps = Omit<ComponentProps<typeof PresiSlide>, "children"> & {
+  children: ReactNode;
+};
+
 export default function Slide({
   children,
   title = "",
   notes = null,
-}: {
-  children: ReactNode;
-  title?: string;
-  notes?: Array<string>;
-}) {
+  className = "",
+  ...props
+}: ThemeSlideProps) {
   return (
-    <PresiSlide className="space-y-6 p-10 font-body" title={title} notes={notes}>
+    <PresiSlide
+      className={`space-y-6 p-10 font-body ${className}`}
+      title={title}
+      notes={notes}
+      {...props}
+    >
       {Boolean(title) && (
         <h1 className="font-heading text-5xl font-extrabold leading-none tracking-tight text-neutral-950">
           {title}

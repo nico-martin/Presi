@@ -8,16 +8,18 @@ const files = {
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "presi dev",
-    "build": "presi build"
+    "dev": "presi-js dev",
+    "build": "presi-js build"
   },
   "dependencies": {
-    "presi": "latest",
+    "presi-js": "latest",
     "@vitejs/plugin-react": "^4.1.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"
   },
   "devDependencies": {
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
     "autoprefixer": "^10.4.16",
     "postcss": "^8.4.31",
     "tailwindcss": "^3.4.17",
@@ -26,26 +28,12 @@ const files = {
   }
 }
 `,
-  "index.html": () => `<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Presi Presentation</title>
-  </head>
-  <body>
-    <div id="app"></div>
-    <script type="module" src="/virtual:presi-entry"></script>
-  </body>
-</html>
-`,
   "presi.config.ts": () => `import react from "@vitejs/plugin-react";
-import { defineConfig } from "presi/server";
+import { defineConfig } from "presi-js/server";
 
 export default defineConfig({
   entry: "Slides.tsx",
   title: "Presi Presentation",
-  resolveMountElement: () => document.getElementById("app"),
   vite: {
     plugins: [react()],
   },
@@ -73,7 +61,7 @@ export default {
 `,
   "Slides.tsx": () => `import React from "react";
 import ReactDOM from "react-dom/client";
-import { Wrapper } from "presi/react";
+import { Wrapper } from "presi-js/react";
 import Slide from "./theme/Slide";
 import "./style.css";
 
@@ -90,7 +78,7 @@ export default function render(mountElement: HTMLElement) {
   ReactDOM.createRoot(mountElement).render(<App />);
 }
 `,
-  "theme/Slide.tsx": () => `import { Slide as PresiSlide } from "presi/react";
+  "theme/Slide.tsx": () => `import { Slide as PresiSlide } from "presi-js/react";
 import type { ReactNode } from "react";
 
 export default function Slide({

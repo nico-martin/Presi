@@ -12,8 +12,8 @@ Presi is distributed as one npm package named `presi`.
 Public imports:
 
 ```ts
-import { Presi } from "presi/core";
-import { defineConfig } from "presi/server";
+import { Presi } from "presi-js/core";
+import { defineConfig } from "presi-js/server";
 ```
 
 Do not import from `@presi/*`, `library/*`, or `packages/*` in a consumer app.
@@ -23,13 +23,13 @@ Do not import from `@presi/*`, `library/*`, or `packages/*` in a consumer app.
 Create a React presentation:
 
 ```sh
-npx presi create react my-talk
+npx presi-js create react my-talk
 ```
 
 Shortcut:
 
 ```sh
-npx presi react my-talk
+npx presi-js react my-talk
 ```
 
 After creation:
@@ -45,8 +45,8 @@ The generated app should have scripts like:
 ```json
 {
   "scripts": {
-    "dev": "presi dev",
-    "build": "presi build"
+    "dev": "presi-js dev",
+    "build": "presi-js build"
   }
 }
 ```
@@ -57,7 +57,7 @@ Presentation apps use `presi.config.ts`.
 
 ```ts
 import react from "@vitejs/plugin-react";
-import { defineConfig } from "presi/server";
+import { defineConfig } from "presi-js/server";
 
 export default defineConfig({
   entry: "Slides.tsx",
@@ -119,6 +119,18 @@ Fragments are DOM elements with the `fragment` class:
 
 Use `data-step-index` for explicit positioning. Avoid `data-fragment-index` in new code; it only exists as a legacy alias.
 
+## Transitions
+
+Slides and step elements have no transition by default. Add `data-transition-in` or `data-transition-out` to opt in.
+
+Supported values are `fade`, `fade-up`, `fade-left`, `fade-right`, `fade-down`, `fade-grow`, `fade-up-grow`, `fade-left-grow`, `fade-right-grow`, and `fade-down-grow`.
+
+Transitions are always `200ms` with `cubic-bezier(.2, .85, .25, 1)`. Multiple elements in one step are staggered by `100ms` in DOM order. Use `data-transition-in-order` or `data-transition-out-order` to override sequencing.
+
+The constants and attribute names are exported as `PRESI_TRANSITION_CONFIG` from `presi-js/core`.
+
+Override timing and attribute names when creating `Presi` with `transition: { duration, delay, easing, attributes }`.
+
 ## Notes
 
 Notes are enabled in dev and disabled in production by default.
@@ -150,6 +162,6 @@ pnpm build
 If debugging directly:
 
 ```sh
-pnpm exec presi dev
-pnpm exec presi build
+pnpm exec presi-js dev
+pnpm exec presi-js build
 ```

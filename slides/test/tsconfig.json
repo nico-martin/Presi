@@ -5,9 +5,9 @@
     "moduleResolution": "Bundler",
     "noEmit": true,
     "paths": {
-      "presi/core": ["../../packages/presi/dist/core.d.ts"],
-      "presi/react": ["../../packages/presi/dist/react.d.ts"],
-      "presi/server": ["../../packages/presi/dist/server.d.ts"]
+      "presi-js/core": ["../../packages/presi-js/dist/core.d.ts"],
+      "presi-js/react": ["../../packages/presi-js/dist/react.d.ts"],
+      "presi-js/server": ["../../packages/presi-js/dist/server.d.ts"]
     }
   },
   "include": [

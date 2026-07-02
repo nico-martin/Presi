@@ -1,11 +1,12 @@
 import React from "react";
-import { Presi } from "presi/core";
+import { Presi, type PresiConfig } from "presi-js/core";
 import { PresiContext, type PresiContextValue } from "./usePresi.ts";
 
 const Wrapper: React.FC<{
   children: React.ReactNode;
   aspectRatio: `${number}:${number}`;
-}> = ({ children, aspectRatio }) => {
+  transition?: PresiConfig["transition"];
+}> = ({ children, aspectRatio, transition }) => {
   const [state, setState] = React.useState<PresiContextValue>({
     slideIndex: 0,
     stepIndex: 0,
@@ -20,7 +21,7 @@ const Wrapper: React.FC<{
   React.useEffect(() => {
     if (!ref.current) return;
 
-    const p = new Presi(ref.current, { aspectRatio });
+    const p = new Presi(ref.current, { aspectRatio, transition });
     const setPresiState = (currentState: {
       slideIndex: number;
       fragmentIndex: number;
@@ -43,7 +44,7 @@ const Wrapper: React.FC<{
       unsubscribeStateChange();
       p.cleanUp();
     };
-  }, [aspectRatio]);
+  }, [aspectRatio, transition]);
 
   return (
     <PresiContext.Provider value={state}>

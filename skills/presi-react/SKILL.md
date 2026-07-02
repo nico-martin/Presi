@@ -1,6 +1,6 @@
 ---
 name: presi-react
-description: Use when authoring, styling, or debugging a React presentation that uses Presi via presi/react.
+description: Use when authoring, styling, or debugging a React presentation that uses Presi via presi-js/react.
 ---
 
 # Presi React
@@ -10,10 +10,10 @@ Use this skill when working in a React presentation app that consumes Presi. Do 
 Use the public React subpath:
 
 ```tsx
-import { Wrapper, Slide, Step, usePresi, useSlideMount } from "presi/react";
+import { Wrapper, Slide, Step, usePresi } from "presi-js/react";
 ```
 
-Do not import from `@presi/react`, `presi/dist/*`, `library/*`, or `packages/*`.
+Do not import from `@presi/react`, `presi-js/dist/*`, `library/*`, or `packages/*`.
 
 ## Entry File
 
@@ -22,7 +22,7 @@ A React presentation entry should default-export a render function:
 ```tsx
 import React from "react";
 import ReactDOM from "react-dom/client";
-import { Wrapper } from "presi/react";
+import { Wrapper } from "presi-js/react";
 import Slide from "./theme/Slide";
 import "./style.css";
 
@@ -62,7 +62,7 @@ Everything that needs `usePresi` must render inside `Wrapper`.
 Recommended theme wrapper:
 
 ```tsx
-import { Slide as PresiSlide } from "presi/react";
+import { Slide as PresiSlide } from "presi-js/react";
 import type { ReactNode } from "react";
 
 export default function Slide({ children, title = "", notes }: {
@@ -96,6 +96,32 @@ Multiple fragments can share a step:
 <p className="fragment" data-step-index="2">B</p>
 ```
 
+## Transitions
+
+Transitions are opt-in. Add `data-transition-in` or `data-transition-out` to slides or step elements.
+
+```tsx
+<Slide title="Intro" data-transition-out="fade-left">
+  <p className="fragment" data-step-index="1" data-transition-in="fade-up">
+    First point
+  </p>
+  <p
+    className="fragment"
+    data-step-index="1"
+    data-transition-in="fade-up"
+    data-transition-in-order="2"
+  >
+    Second point
+  </p>
+</Slide>
+```
+
+Supported values are `fade`, `fade-up`, `fade-left`, `fade-right`, `fade-down`, `fade-grow`, `fade-up-grow`, `fade-left-grow`, `fade-right-grow`, and `fade-down-grow`.
+
+Use `data-transition-in-order` or `data-transition-out-order` to override the default DOM-order stagger.
+
+Customize timing or attribute names on `Wrapper` with `transition={{ duration, delay, easing, attributes }}`.
+
 ## JavaScript Steps
 
 Use `Step` to run JavaScript at a specific step.
@@ -118,26 +144,28 @@ The callback may return cleanup:
 
 Cleanup runs when the step is no longer active or when the presentation unmounts.
 
-## Slide Mount Effects
+## Slide Lifecycle Effects
 
-Use `useSlideMount` for a step-0 effect tied to the next rendered slide.
+Use `onMount` and `onUnmount` on `Slide` for step-0 effects tied to slide visibility.
 
 ```tsx
 function IntroSlide() {
-  useSlideMount(() => {
-    console.log("slide active");
-    return () => console.log("slide inactive");
-  });
-
-  return <Slide title="Intro">Hello</Slide>;
+  return (
+    <Slide
+      title="Intro"
+      onMount={() => console.log("slide active")}
+      onUnmount={() => console.log("slide inactive")}
+    >
+      Hello
+    </Slide>
+  );
 }
 ```
 
 Rules:
 
-- Call it at the top of a slide component.
-- It associates with the next rendered `Slide`.
-- Return a cleanup function when the effect allocates resources.
+- `onMount` runs when the slide becomes active.
+- `onUnmount` runs when the slide is no longer active or when the presentation unmounts.
 - Do not use React `useEffect` for slide lifecycle; the whole deck mounts at once.
 
 ## Presentation State

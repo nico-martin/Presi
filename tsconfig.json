@@ -24,13 +24,13 @@
     "noFallthroughCasesInSwitch": true,
     "strictNullChecks": false,
     "paths": {
-      "presi/react": [
+      "presi-js/react": [
         "./library/react/index.ts",
       ],
-      "presi/core": [
+      "presi-js/core": [
         "./library/core/index.ts",
       ],
-      "presi/server": [
+      "presi-js/server": [
         "./library/server/index.ts",
       ]
     },

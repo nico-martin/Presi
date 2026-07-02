@@ -1,22 +1,22 @@
 # Presi
 
-Presi is a presentation framework built as local pnpm workspace packages.
+Presi is a presentation framework built as a single npm package from local source.
 
 The core idea is that presentations are normal frontend apps. Presi provides the presentation runtime, React bindings, and a framework-agnostic dev/build server around Vite.
 
 ## Packages
 
-This repo is a pnpm workspace.
+This repo is a pnpm workspace for development only.
 
-- The single public package is `presi`, built to `packages/presi`.
-- Core runtime is imported from `presi/core`.
-- React bindings are imported from `presi/react`.
-- Server/dev/build APIs are imported from `presi/server`.
+- The single public package is `presi-js`, built to `packages/presi-js`.
+- Core runtime is imported from `presi-js/core`.
+- React bindings are imported from `presi-js/react`.
+- Server/dev/build APIs are imported from `presi-js/server`.
 - `@presi/slides-test` lives in `slides/test` and is the local example presentation app.
 
-Generated files under `packages/*/dist` are build output. Do not edit them manually.
+Everything under `packages/` is generated build output. Do not edit it manually.
 
-The npm package ships only `dist` and `skills` from `packages/presi`. Repository-only files like `AGENTS.md` and the local `slides/` examples are not shipped.
+The npm package ships only `dist` and `skills` from `packages/presi-js`. Repository-only files like `AGENTS.md` and the local `slides/` examples are not shipped.
 
 ## Commands
 
@@ -29,13 +29,13 @@ pnpm install
 Create a new React presentation with the single-package CLI:
 
 ```sh
-npx presi create react my-talk
+npx presi-js create react my-talk
 ```
 
 Shortcut:
 
 ```sh
-npx presi react my-talk
+npx presi-js react my-talk
 ```
 
 Build the Presi packages:
@@ -64,9 +64,9 @@ pnpm --filter @presi/slides-test exec tsc --noEmit
 
 ## Architecture
 
-### `presi/core`
+### `presi-js/core`
 
-`presi/core` owns the browser presentation runtime.
+`presi-js/core` owns the browser presentation runtime.
 
 Responsibilities:
 
@@ -92,14 +92,14 @@ Important concepts:
 - `data-fragment-index` still works as a legacy alias.
 - JS effects are registered through the step registry and referenced in the DOM by `data-presi-step-id`.
 
-### `presi/react`
+### `presi-js/react`
 
-`presi/react` provides React bindings for Presi.
+`presi-js/react` provides React bindings for Presi.
 
 Primary imports:
 
 ```tsx
-import { Wrapper, Slide, Step, usePresi, useSlideMount } from "presi/react";
+import { Wrapper, Slide, Step, usePresi } from "presi-js/react";
 ```
 
 `Wrapper` creates the core `Presi` instance:
@@ -147,23 +147,90 @@ Fragments use the `fragment` class:
 </Slide>
 ```
 
-`useSlideMount` registers a step-0 effect for the next rendered `Slide`:
+`Slide` supports lifecycle callbacks tied to slide visibility:
 
 ```tsx
 function IntroSlide() {
-  useSlideMount(() => {
-    console.log("slide active");
-
-    return () => {
-      console.log("slide inactive");
-    };
-  });
-
-  return <Slide title="Intro">Hello</Slide>;
+  return (
+    <Slide
+      title="Intro"
+      onMount={() => console.log("slide active")}
+      onUnmount={() => console.log("slide inactive")}
+    >
+      Hello
+    </Slide>
+  );
 }
 ```
 
-Call `useSlideMount` at the top of a slide component before returning `<Slide>`.
+Internally these callbacks are registered as a step-0 effect. `onUnmount` runs when the slide is no longer active or when the presentation unmounts.
+
+Transitions are opt-in through data attributes. Slides and step elements have no transition by default.
+
+```tsx
+<Slide title="Intro" data-transition-out="fade-left">
+  <h2 className="fragment" data-step-index="1" data-transition-in="fade-up">
+    First point
+  </h2>
+  <p
+    className="fragment"
+    data-step-index="1"
+    data-transition-in="fade-up"
+    data-transition-in-order="2"
+  >
+    Second point
+  </p>
+</Slide>
+```
+
+Supported transition values:
+
+- `fade`
+- `fade-up`
+- `fade-left`
+- `fade-right`
+- `fade-down`
+- `fade-grow`
+- `fade-up-grow`
+- `fade-left-grow`
+- `fade-right-grow`
+- `fade-down-grow`
+
+All transitions run for `200ms` with `cubic-bezier(.2, .85, .25, 1)`. Multiple elements entering or leaving in the same step are staggered by `100ms` in DOM order. Override order with `data-transition-in-order` or `data-transition-out-order`.
+
+The transition constants and attribute names are exported from `presi-js/core` as `PRESI_TRANSITION_CONFIG`.
+
+Override transition timing or attribute names when creating Presi:
+
+```ts
+new Presi(wrapper, {
+  transition: {
+    duration: 300,
+    delay: 75,
+    easing: "ease-out",
+    attributes: {
+      in: "data-enter",
+      out: "data-leave",
+      inOrder: "data-enter-order",
+      outOrder: "data-leave-order",
+    },
+  },
+});
+```
+
+React users can pass the same transition options to `Wrapper`:
+
+```tsx
+<Wrapper
+  aspectRatio="16:9"
+  transition={{
+    duration: 300,
+    delay: 75,
+  }}
+>
+  <Slide title="Intro">Hello</Slide>
+</Wrapper>
+```
 
 `usePresi` exposes presentation state:
 
@@ -186,16 +253,16 @@ Current shape:
 }
 ```
 
-### `presi/server`
+### `presi-js/server`
 
-`presi/server` provides a framework-agnostic dev/build layer on top of Vite.
+`presi-js/server` provides a framework-agnostic dev/build layer on top of Vite.
 
 It does not know about React, Vue, Svelte, or any specific UI framework. Framework support is passed through Vite plugins in the Presi config.
 
 Supported commands for now:
 
-- `presi dev`
-- `presi build`
+- `presi-js dev`
+- `presi-js build`
 
 PDF export is planned but not implemented yet.
 
@@ -205,7 +272,7 @@ A presentation app can define `presi.config.ts`:
 
 ```ts
 import react from "@vitejs/plugin-react";
-import { defineConfig } from "presi/server";
+import { defineConfig } from "presi-js/server";
 
 export default defineConfig({
   entry: "Slides.tsx",
@@ -261,7 +328,7 @@ React example:
 ```tsx
 import React from "react";
 import ReactDOM from "react-dom/client";
-import { Wrapper, Slide } from "presi/react";
+import { Wrapper, Slide } from "presi-js/react";
 
 const App = () => (
   <Wrapper aspectRatio="16:9">
@@ -274,13 +341,13 @@ export default function render(mountElement: HTMLElement) {
 }
 ```
 
-This keeps `presi/server` framework agnostic. Vue, Svelte, Solid, vanilla JS, or any other frontend stack can use the same shape as long as the entry exports a render function.
+This keeps `presi-js/server` framework agnostic. Vue, Svelte, Solid, vanilla JS, or any other frontend stack can use the same shape as long as the entry exports a render function.
 
 ## Notes
 
 Speaker notes are controlled through a runtime build convention.
 
-`presi/server` defines:
+`presi-js/server` defines:
 
 ```ts
 PRESI_INCLUDE_NOTES
@@ -309,7 +376,7 @@ Important files:
 - `slides/test/index.html`: custom HTML shell using `#app`.
 - `slides/test/Slides.tsx`: app entry; exports the render function.
 - `slides/test/slides/`: individual slide files.
-- `slides/test/theme/Slide.tsx`: themed wrapper around `presi/react`'s `Slide`.
+- `slides/test/theme/Slide.tsx`: themed wrapper around `presi-js/react`'s `Slide`.
 - `slides/test/style.css`: defines local variable fonts and Tailwind layers.
 - `slides/test/fonts/`: locally hosted variable font files.
 - `slides/test/tailwind.config.js`: Tailwind content/theme config.
@@ -318,7 +385,7 @@ Important files:
 The app is intentionally a consumer of the built packages:
 
 ```tsx
-import { Wrapper, Slide } from "presi/react";
+import { Wrapper, Slide } from "presi-js/react";
 ```
 
 It should behave like an external app using Presi.
@@ -358,16 +425,16 @@ className="font-body" // Nunito Sans variable, body text
 - `node scripts/build.mjs --watch`
 - `pnpm --filter @presi/slides-test dev`
 
-When files under `library/` change, esbuild rebuilds the workspace package outputs. The test presentation consumes those workspace packages and Vite picks up the latest build.
+When files under `library/` change, esbuild rebuilds `packages/presi-js`. The test presentation runs through the generated CLI while its Vite config aliases imports back to local source for development.
 
 ## Build Outputs
 
 `scripts/build.mjs` bundles library sources with esbuild:
 
-- `library/core/index.ts` to `packages/presi/dist/core.js`
-- `library/react/index.ts` to `packages/presi/dist/react.js`
-- `library/server/index.ts` to `packages/presi/dist/server.js`
-- `library/server/cli.ts` to `packages/presi/dist/cli.js`
+- `library/core/index.ts` to `packages/presi-js/dist/core.js`
+- `library/react/index.ts` to `packages/presi-js/dist/react.js`
+- `library/server/index.ts` to `packages/presi-js/dist/server.js`
+- `library/server/cli.ts` to `packages/presi-js/dist/cli.js`
 
 The script also writes `.d.ts` files for public package types.
 
@@ -387,7 +454,7 @@ The slides build may print a stale Browserslist `caniuse-lite` warning. That war
 ## Current Limitations
 
 - PDF export is not implemented yet.
-- `presi/server` currently supports dev and production SPA builds only.
+- `presi-js/server` currently supports dev and production SPA builds only.
 - `stepIndex` is still named `fragmentIndex` in parts of core internals for historical reasons.
 - Public type declarations are currently generated by `scripts/build.mjs` rather than emitted by `tsc`.
 
@@ -396,6 +463,6 @@ The slides build may print a stale Browserslist `caniuse-lite` warning. That war
 Consumer-facing skills are authored in root `skills/` and shipped in the npm package under `skills/`.
 
 - `presi-core`: framework-agnostic Presi concepts, config, CLI, steps, notes, and builds.
-- `presi-react`: authoring, styling, and debugging React presentations using `presi/react`.
+- `presi-react`: authoring, styling, and debugging React presentations using `presi-js/react`.
 
 `AGENTS.md` is intentionally not part of the package. It is only for contributors working on this repository.

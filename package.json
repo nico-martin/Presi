@@ -9,10 +9,11 @@
     "dev": "node scripts/dev.mjs",
     "dev:lib": "node scripts/build.mjs --watch",
     "dev:slides": "pnpm --filter @presi/slides-test dev",
-    "build": "node scripts/build.mjs"
+    "build": "node scripts/build.mjs",
+    "publish": "node scripts/publish.mjs"
   },
   "author": "Nico Martin <mail@nico.dev>",
-  "license": "ISC",
+  "license": "Apache-2.0",
   "dependencies": {
     "puppeteer": "^21.5.0",
     "react": "^18.2.0",

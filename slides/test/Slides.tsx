@@ -4,7 +4,7 @@ import SlideOne from "./slides/SlideOne.tsx";
 import TypographySlide from "./slides/TypographySlide.tsx";
 import "./style.css";
 
-import { Wrapper, usePresi } from "presi/react";
+import { Wrapper, usePresi } from "presi-js/react";
 import Slide from "./theme/Slide.tsx";
 
 function Bkg() {

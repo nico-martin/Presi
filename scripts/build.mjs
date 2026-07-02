@@ -23,28 +23,28 @@ const rawPlugin = {
 const builds = [
   {
     entryPoints: ["library/index.ts"],
-    outfile: "packages/presi/dist/index.js",
+    outfile: "packages/presi-js/dist/index.js",
     external: ["vite", "react", "react-dom"],
   },
   {
     entryPoints: ["library/core/index.ts"],
-    outfile: "packages/presi/dist/core.js",
+    outfile: "packages/presi-js/dist/core.js",
     external: [],
   },
   {
     entryPoints: ["library/react/index.ts"],
-    outfile: "packages/presi/dist/react.js",
-    external: ["presi/core", "react", "react-dom"],
+    outfile: "packages/presi-js/dist/react.js",
+    external: ["presi-js/core", "react", "react-dom"],
   },
   {
     entryPoints: ["library/server/index.ts"],
-    outfile: "packages/presi/dist/server.js",
+    outfile: "packages/presi-js/dist/server.js",
     external: ["vite"],
     platform: "node",
   },
   {
     entryPoints: ["library/server/cli.ts"],
-    outfile: "packages/presi/dist/cli.js",
+    outfile: "packages/presi-js/dist/cli.js",
     external: ["vite"],
     platform: "node",
   },
@@ -62,15 +62,30 @@ const options = {
 
 const writeTypes = async () => {
   await Promise.all([
-    mkdir("packages/presi/dist", { recursive: true }),
+      mkdir("packages/presi-js/dist", { recursive: true }),
   ]);
 
   await Promise.all([
     writeFile(
-      "packages/presi/dist/core.d.ts",
+      "packages/presi-js/dist/core.d.ts",
       `export interface PresiConfig {
   aspectRatio?: \`${"${number}:${number}"}\`;
   calculateFontSize?: () => number;
+  transition?: PresiTransitionConfig;
+}
+
+export interface PresiTransitionConfig {
+  duration?: number;
+  delay?: number;
+  easing?: string;
+  attributes?: Partial<PresiTransitionAttributes>;
+}
+
+export interface PresiTransitionAttributes {
+  in: string;
+  out: string;
+  inOrder: string;
+  outOrder: string;
 }
 
 export interface PresiHashState {
@@ -98,6 +113,30 @@ export interface PresiEventsStateChange {
 export type PresiStepCleanup = void | (() => void);
 export type PresiStepFunction = () => PresiStepCleanup;
 
+export declare const PRESI_TRANSITION_CONFIG: {
+  readonly duration: 200;
+  readonly delay: 100;
+  readonly easing: "cubic-bezier(.2, .85, .25, 1)";
+  readonly attributes: {
+    readonly in: "data-transition-in";
+    readonly out: "data-transition-out";
+    readonly inOrder: "data-transition-in-order";
+    readonly outOrder: "data-transition-out-order";
+  };
+  readonly transitions: {
+    readonly fade: { readonly x: "0"; readonly y: "0"; readonly scale: 1 };
+    readonly "fade-up": { readonly x: "0"; readonly y: "2rem"; readonly scale: 1 };
+    readonly "fade-left": { readonly x: "2rem"; readonly y: "0"; readonly scale: 1 };
+    readonly "fade-right": { readonly x: "-2rem"; readonly y: "0"; readonly scale: 1 };
+    readonly "fade-down": { readonly x: "0"; readonly y: "-2rem"; readonly scale: 1 };
+    readonly "fade-grow": { readonly x: "0"; readonly y: "0"; readonly scale: 0.5 };
+    readonly "fade-up-grow": { readonly x: "0"; readonly y: "2rem"; readonly scale: 0.5 };
+    readonly "fade-left-grow": { readonly x: "2rem"; readonly y: "0"; readonly scale: 0.5 };
+    readonly "fade-right-grow": { readonly x: "-2rem"; readonly y: "0"; readonly scale: 0.5 };
+    readonly "fade-down-grow": { readonly x: "0"; readonly y: "-2rem"; readonly scale: 0.5 };
+  };
+};
+
 export declare const registerPresiStep: (id: string, run: PresiStepFunction) => void;
 export declare const unregisterPresiStep: (id: string) => void;
 
@@ -119,27 +158,28 @@ export declare class Presi {
 `,
     ),
     writeFile(
-      "packages/presi/dist/react.d.ts",
+      "packages/presi-js/dist/react.d.ts",
       `import type React from "react";
 
 export interface WrapperProps {
   children: React.ReactNode;
   aspectRatio: \`${"${number}:${number}"}\`;
+  transition?: import("presi-js/core").PresiConfig["transition"];
 }
 
-export interface SlideProps {
+export interface SlideProps extends React.HTMLAttributes<HTMLElement> {
   children: React.ReactNode;
   className?: string;
   title?: string;
   notes?: Array<string>;
+  onMount?: () => void;
+  onUnmount?: () => void;
 }
 
 export interface StepProps {
   stepIndex?: number;
   run: () => void | (() => void);
 }
-
-export type SlideMountProps = Pick<StepProps, "run">;
 
 export interface PresiSlideProps {
   title: string;
@@ -156,13 +196,11 @@ export interface PresiContextValue {
 export declare const Wrapper: React.FC<WrapperProps>;
 export declare const Slide: React.FC<SlideProps>;
 export declare const Step: React.FC<StepProps>;
-export declare const SlideMount: React.FC<SlideMountProps>;
-export declare const useSlideMount: (run: () => void | (() => void)) => void;
 export declare const usePresi: () => PresiContextValue;
 `,
     ),
     writeFile(
-      "packages/presi/dist/server.d.ts",
+      "packages/presi-js/dist/server.d.ts",
       `import type { InlineConfig } from "vite";
 
 export interface PresiConfig {
@@ -198,29 +236,44 @@ export declare const buildPresentation: (options?: { configFile?: string }) => P
 `,
     ),
     writeFile(
-      "packages/presi/dist/index.d.ts",
+      "packages/presi-js/dist/index.d.ts",
       `export * from "./core.js";
 `,
     ),
   ]);
 };
 
-const copySkills = async () => {
-  await rm("packages/presi/skills", { recursive: true, force: true });
-  await cp("skills", "packages/presi/skills", { recursive: true });
+const copyPackageAssets = async () => {
+  await rm("packages/presi-js/skills", { recursive: true, force: true });
+  await Promise.all([
+    cp("skills", "packages/presi-js/skills", { recursive: true }),
+    cp("README.md", "packages/presi-js/README.md"),
+    cp("LICENSE", "packages/presi-js/LICENSE"),
+  ]);
 };
 
 const writePackageJson = async () => {
-  await mkdir("packages/presi", { recursive: true });
+  await mkdir("packages/presi-js", { recursive: true });
   await writeFile(
-    "packages/presi/package.json",
+    "packages/presi-js/package.json",
     `${JSON.stringify(
       {
-        name: "presi",
-        version: "0.0.1",
+        name: "presi-js",
+        version: "0.0.5",
+        description: "A modern presentation framework",
         type: "module",
+        author: "Nico Martin <mail@nico.dev>",
+        license: "Apache-2.0",
+        repository: {
+          type: "git",
+          url: "git+https://github.com/nico-martin/presi.git",
+        },
+        bugs: {
+          url: "https://github.com/nico-martin/presi/issues",
+        },
+        homepage: "https://github.com/nico-martin/presi#readme",
         bin: {
-          presi: "./dist/cli.js",
+          "presi-js": "./dist/cli.js",
         },
         main: "./dist/index.js",
         module: "./dist/index.js",
@@ -243,7 +296,7 @@ const writePackageJson = async () => {
             import: "./dist/server.js",
           },
         },
-        files: ["dist", "skills"],
+        files: ["dist", "skills", "README.md", "LICENSE"],
         dependencies: {
           vite: "^4.5.0",
         },
@@ -267,7 +320,7 @@ const writePackageJson = async () => {
 };
 
 const writePackageFiles = async () => {
-  await Promise.all([writeTypes(), copySkills(), writePackageJson()]);
+  await Promise.all([writeTypes(), copyPackageAssets(), writePackageJson()]);
 };
 
 if (watch) {

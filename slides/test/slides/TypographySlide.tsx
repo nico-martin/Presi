@@ -4,7 +4,10 @@ export default function TypographySlide() {
   return (
     <Slide title="Typography System">
       <div className="grid grid-cols-2 gap-8 text-neutral-800">
-        <div className="rounded-3xl bg-neutral-100 p-8">
+        <div
+          className="rounded-3xl bg-neutral-100 p-8"
+          data-transition-in="fade-grow"
+        >
           <p className="mb-3 text-sm font-bold uppercase tracking-[0.2em] text-neutral-500">
             Title / Body
           </p>
@@ -17,7 +20,10 @@ export default function TypographySlide() {
           </p>
         </div>
 
-        <div className="rounded-3xl bg-blue-700 p-8 text-white">
+        <div
+          className="rounded-3xl bg-blue-700 p-8 text-white"
+          data-transition-in="fade-grow"
+        >
           <p className="mb-3 text-sm font-bold uppercase tracking-[0.2em] text-blue-100">
             Contrast
           </p>

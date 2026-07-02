@@ -11,10 +11,68 @@ interface PresiTimelineEffect {
   id: string;
 }
 
+interface PresiTimelineElement {
+  element: HTMLElement;
+  direction: "in" | "out";
+}
+
 interface PresiTimelineStep {
-  fragments: HTMLElement[];
+  elements: PresiTimelineElement[];
   effects: PresiTimelineEffect[];
 }
+
+export interface PresiTransitionAttributes {
+  in: string;
+  out: string;
+  inOrder: string;
+  outOrder: string;
+}
+
+export interface PresiTransitionConfig {
+  duration?: number;
+  delay?: number;
+  easing?: string;
+  attributes?: Partial<PresiTransitionAttributes>;
+}
+
+export interface PresiConfig {
+  aspectRatio?: `${number}:${number}`;
+  calculateFontSize?: () => number;
+  transition?: PresiTransitionConfig;
+}
+
+export const PRESI_TRANSITION_CONFIG = {
+  duration: 400,
+  delay: 200,
+  easing: "cubic-bezier(.2, .85, .25, 1)",
+  attributes: {
+    in: "data-transition-in",
+    out: "data-transition-out",
+    inOrder: "data-transition-in-order",
+    outOrder: "data-transition-out-order",
+  },
+  transitions: {
+    fade: { x: "0", y: "0", scale: 1 },
+    "fade-up": { x: "0", y: "2rem", scale: 1 },
+    "fade-left": { x: "2rem", y: "0", scale: 1 },
+    "fade-right": { x: "-2rem", y: "0", scale: 1 },
+    "fade-down": { x: "0", y: "-2rem", scale: 1 },
+    "fade-grow": { x: "0", y: "0", scale: 0.5 },
+    "fade-up-grow": { x: "0", y: "2rem", scale: 0.5 },
+    "fade-left-grow": { x: "2rem", y: "0", scale: 0.5 },
+    "fade-right-grow": { x: "-2rem", y: "0", scale: 0.5 },
+    "fade-down-grow": { x: "0", y: "-2rem", scale: 0.5 },
+  },
+} as const;
+
+type PresiTransitionName = keyof typeof PRESI_TRANSITION_CONFIG.transitions;
+type PresiResolvedTransitionConfig = {
+  duration: number;
+  delay: number;
+  easing: string;
+  attributes: PresiTransitionAttributes;
+  transitions: typeof PRESI_TRANSITION_CONFIG.transitions;
+};
 
 const styles = {
   wrapper: "presi-wrapper",
@@ -37,7 +95,7 @@ const injectBaseStyles = () => {
   left: 50%;
   top: 50%;
   aspect-ratio: var(--aspect-ratio);
-  background-color: pink;
+  background-color: white;
   transform: translate(-50%, -50%);
   width: 100vw;
 }
@@ -73,15 +131,26 @@ class Presi {
     steps: PresiTimelineStep[];
   }> = [];
   private activeEffects = new Map<string, PresiStepCleanup>();
+  private currentState: PresiHashState | null = null;
+  private readonly transitionConfig: PresiResolvedTransitionConfig;
 
   public constructor(
     wrapper: HTMLElement,
     {
       aspectRatio = "16:9",
       calculateFontSize = () => window.innerWidth / 48,
+      transition = {},
     }: PresiConfig,
   ) {
     this.calculateFontSize = calculateFontSize;
+    this.transitionConfig = {
+      ...PRESI_TRANSITION_CONFIG,
+      ...transition,
+      attributes: {
+        ...PRESI_TRANSITION_CONFIG.attributes,
+        ...transition.attributes,
+      },
+    };
     this.aspect = aspectRatio;
     const aspect = aspectRatio.replace(":", "/");
     this.wrapper = wrapper;
@@ -94,7 +163,12 @@ class Presi {
 
     const presiStyles = document.createElement("style");
     presiStyles.id = "presi-styles";
-    presiStyles.innerHTML = `@media (min-aspect-ratio: ${aspect}) {
+    presiStyles.innerHTML = `.${styles.slide} [${this.transitionConfig.attributes.in}]:not(.visible),
+.${styles.slide} [${this.transitionConfig.attributes.out}].hidden {
+  opacity: 0;
+}
+
+@media (min-aspect-ratio: ${aspect}) {
   .${styles.wrapper} {
     width: auto;
     height: 100vh;
@@ -181,6 +255,7 @@ class Presi {
   };
 
   private drawSlide = (slideIndex: number, fragmentIndex: number) => {
+    const prevState = this.currentState;
     this.slides.map(({ slide }) => {
       slide.style.display = "none";
     });
@@ -188,17 +263,31 @@ class Presi {
     currentSlide.slide.style.display = "block";
 
     const activeEffectIds = new Set<string>();
+    const transitionInElements: HTMLElement[] = [];
 
     currentSlide.steps.map((step, i) => {
+      step.elements.map(({ element, direction }) => {
+        const wasVisible = this.isElementVisibleAtStep(
+          i,
+          direction,
+          prevState?.slideIndex === slideIndex ? prevState.fragmentIndex : null,
+        );
+        const isVisible = this.isElementVisibleAtStep(
+          i,
+          direction,
+          fragmentIndex,
+        );
+
+        element.classList.toggle("visible", isVisible);
+        element.classList.toggle("hidden", !isVisible);
+
+        if (!wasVisible && isVisible) {
+          transitionInElements.push(element);
+        }
+      });
+
       if (i <= fragmentIndex) {
-        step.fragments.map((fragment) => {
-          fragment.classList.add("visible");
-        });
         step.effects.map((effect) => activeEffectIds.add(effect.id));
-      } else {
-        step.fragments.map((fragment) => {
-          fragment.classList.remove("visible");
-        });
       }
     });
 
@@ -209,30 +298,58 @@ class Presi {
       .map((effect) => this.runEffect(effect.id));
 
     const currentState = { slideIndex, fragmentIndex };
+    this.currentState = currentState;
     this.eventBus.publish("stateChange", {
       currentState,
       nextState: this.nextState(currentState) || currentState,
     });
+
+    const shouldAnimateSlideIn =
+      prevState && prevState.slideIndex !== slideIndex;
+    shouldAnimateSlideIn && this.animateTransitionIn([currentSlide.slide]);
+    this.animateTransitionIn(transitionInElements);
+  };
+
+  private isElementVisibleAtStep = (
+    stepIndex: number,
+    direction: PresiTimelineElement["direction"],
+    currentStep: number | null,
+  ): boolean => {
+    if (currentStep === null) return false;
+    return direction === "in"
+      ? stepIndex <= currentStep
+      : stepIndex > currentStep;
   };
 
   private getStepsFromSlide = (slide: HTMLElement): PresiTimelineStep[] => {
-    const timeline: PresiTimelineStep[] = [{ fragments: [], effects: [] }];
+    const timeline: PresiTimelineStep[] = [{ elements: [], effects: [] }];
     const elements: HTMLElement[] = Array.from(
-      slide.querySelectorAll(".fragment, [data-presi-step-id]"),
+      slide.querySelectorAll(
+        `.fragment, [data-presi-step-id], [${this.transitionConfig.attributes.in}], [${this.transitionConfig.attributes.out}]`,
+      ),
     );
     let nextImplicitIndex = 1;
 
     elements.map((element) => {
       const explicitIndex = this.getExplicitStepIndex(element);
-      const stepIndex = explicitIndex ?? nextImplicitIndex;
-      nextImplicitIndex = Math.max(nextImplicitIndex, stepIndex + 1);
+      const usesImplicitStep = this.usesImplicitStep(element);
+      const stepIndex =
+        explicitIndex ?? (usesImplicitStep ? nextImplicitIndex : 0);
+      if (usesImplicitStep) {
+        nextImplicitIndex = Math.max(nextImplicitIndex, stepIndex + 1);
+      }
       timeline[stepIndex] = timeline[stepIndex] || {
-        fragments: [],
+        elements: [],
         effects: [],
       };
 
-      if (element.classList.contains("fragment")) {
-        timeline[stepIndex].fragments.push(element);
+      if (
+        element.classList.contains("fragment") ||
+        element.hasAttribute(this.transitionConfig.attributes.in)
+      ) {
+        timeline[stepIndex].elements.push({ element, direction: "in" });
+      } else if (element.hasAttribute(this.transitionConfig.attributes.out)) {
+        timeline[stepIndex].elements.push({ element, direction: "out" });
       }
 
       const effectId = element.getAttribute("data-presi-step-id");
@@ -241,8 +358,12 @@ class Presi {
       }
     });
 
-    return timeline.map((step) => step || { fragments: [], effects: [] });
+    return timeline.map((step) => step || { elements: [], effects: [] });
   };
+
+  private usesImplicitStep = (element: HTMLElement): boolean =>
+    element.classList.contains("fragment") ||
+    element.hasAttribute("data-presi-step-id");
 
   private getExplicitStepIndex = (element: HTMLElement): number | null => {
     const index =
@@ -341,7 +462,7 @@ class Presi {
     prevState: PresiHashState,
     nextState: PresiHashState,
   ) => {
-    const slideChanged = prevState.slideIndex !== nextState.slideIndex;
+    await this.animateStateOut(prevState, nextState);
 
     if (prevState.slideIndex !== nextState.slideIndex) {
       this.eventBus.publish("slideChange", {
@@ -359,19 +480,151 @@ class Presi {
       });
     }
 
-    if (!document.startViewTransition || !slideChanged) {
-      window.location.hash = `#/${nextState.slideIndex}/${nextState.fragmentIndex}`;
-      return;
+    window.location.hash = `#/${nextState.slideIndex}/${nextState.fragmentIndex}`;
+  };
+
+  private animateStateOut = async (
+    prevState: PresiHashState,
+    nextState: PresiHashState,
+  ) => {
+    const prevSlide = this.slides[prevState.slideIndex];
+    if (!prevSlide) return;
+
+    const elements: HTMLElement[] = [];
+    if (prevState.slideIndex !== nextState.slideIndex) {
+      elements.push(prevSlide.slide);
     }
-    this.backwards && document.documentElement.classList.add("back-transition");
-    const transition = document.startViewTransition(() => {
-      window.location.hash = `#/${nextState.slideIndex}/${nextState.fragmentIndex}`;
-    });
-    try {
-      await transition.finished;
-    } finally {
-      document.documentElement.classList.remove("back-transition");
+
+    if (prevState.slideIndex === nextState.slideIndex) {
+      prevSlide.steps.map((step, stepIndex) => {
+        step.elements.map(({ element, direction }) => {
+          const wasVisible = this.isElementVisibleAtStep(
+            stepIndex,
+            direction,
+            prevState.fragmentIndex,
+          );
+          const isVisible = this.isElementVisibleAtStep(
+            stepIndex,
+            direction,
+            nextState.fragmentIndex,
+          );
+          if (wasVisible && !isVisible) {
+            elements.push(element);
+          }
+        });
+      });
     }
+
+    await this.animateTransitionOut(elements);
+  };
+
+  private getTransitionName = (
+    element: HTMLElement,
+    attribute: string,
+  ): PresiTransitionName | null => {
+    const transition = element.getAttribute(attribute);
+    if (!transition) return null;
+    return transition in PRESI_TRANSITION_CONFIG.transitions
+      ? (transition as PresiTransitionName)
+      : null;
+  };
+
+  private getTransitionOrder = (
+    element: HTMLElement,
+    index: number,
+    direction: "in" | "out",
+  ): number => {
+    const order = element.getAttribute(
+      direction === "in"
+        ? this.transitionConfig.attributes.inOrder
+        : this.transitionConfig.attributes.outOrder,
+    );
+    if (order === null) return index;
+
+    const parsedOrder = parseInt(order);
+    return Number.isNaN(parsedOrder) ? index : parsedOrder;
+  };
+
+  private sortTransitionElements = (
+    elements: HTMLElement[],
+    direction: "in" | "out",
+  ): HTMLElement[] =>
+    elements
+      .map((element, index) => ({ element, index }))
+      .sort((a, b) => {
+        const orderDiff =
+          this.getTransitionOrder(a.element, a.index, direction) -
+          this.getTransitionOrder(b.element, b.index, direction);
+        return orderDiff || a.index - b.index;
+      })
+      .map(({ element }) => element);
+
+  private invertOffset = (offset: string): string => {
+    if (offset === "0") return offset;
+    return offset.startsWith("-") ? offset.slice(1) : `-${offset}`;
+  };
+
+  private animateTransitionIn = (elements: HTMLElement[]) => {
+    this.animateTransitions(
+      elements,
+      this.transitionConfig.attributes.in,
+      "in",
+    );
+  };
+
+  private animateTransitionOut = async (elements: HTMLElement[]) =>
+    this.animateTransitions(
+      elements,
+      this.transitionConfig.attributes.out,
+      "out",
+    );
+
+  private animateTransitions = async (
+    elements: HTMLElement[],
+    attribute: string,
+    direction: "in" | "out",
+  ) => {
+    const animations = this.sortTransitionElements(elements, direction)
+      .map((element, index) => {
+        const transitionName = this.getTransitionName(element, attribute);
+        if (!transitionName) return null;
+
+        const transition = PRESI_TRANSITION_CONFIG.transitions[transitionName];
+        const hiddenFrame = {
+          opacity: 0,
+          transform: `translate(${
+            direction === "in" ? transition.x : this.invertOffset(transition.x)
+          }, ${
+            direction === "in" ? transition.y : this.invertOffset(transition.y)
+          }) scale(${transition.scale})`,
+        };
+        const visibleFrame = {
+          opacity: 1,
+          transform: "translate(0, 0) scale(1)",
+        };
+
+        return element.animate(
+          direction === "in"
+            ? [hiddenFrame, visibleFrame]
+            : [visibleFrame, hiddenFrame],
+          {
+            duration: this.transitionConfig.duration,
+            delay: index * this.transitionConfig.delay,
+            easing: this.transitionConfig.easing,
+            fill: "both",
+          },
+        );
+      })
+      .filter((animation): animation is Animation => Boolean(animation));
+
+    await Promise.all(
+      animations.map((animation) =>
+        animation.finished.finally(() => {
+          animation.commitStyles();
+          animation.cancel();
+        }),
+      ),
+    );
   };
 
   public getCurrentSlide = (): HTMLElement =>
@@ -379,10 +632,13 @@ class Presi {
 
   public getTotalSlides = (): number => this.slides.length;
 
-  public getTotalSteps = (slideIndex = this.getCurrentHashStateSave().slideIndex): number =>
-    this.slides[slideIndex]?.steps.length || 0;
+  public getTotalSteps = (
+    slideIndex = this.getCurrentHashStateSave().slideIndex,
+  ): number => this.slides[slideIndex]?.steps.length || 0;
 
-  public getSlideProps = (slideIndex = this.getCurrentHashStateSave().slideIndex): {
+  public getSlideProps = (
+    slideIndex = this.getCurrentHashStateSave().slideIndex,
+  ): {
     title: string;
   } => ({
     title: this.slides[slideIndex]?.slide.getAttribute("data-title") || "",

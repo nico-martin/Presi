@@ -1,6 +1,21 @@
 interface PresiConfig {
   aspectRatio?: `${number}:${number}`;
   calculateFontSize?: () => number;
+  transition?: PresiTransitionConfig;
+}
+
+interface PresiTransitionConfig {
+  duration?: number;
+  delay?: number;
+  easing?: string;
+  attributes?: Partial<PresiTransitionAttributes>;
+}
+
+interface PresiTransitionAttributes {
+  in: string;
+  out: string;
+  inOrder: string;
+  outOrder: string;
 }
 
 interface PresiHashState {
