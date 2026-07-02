@@ -390,8 +390,10 @@ class Presi {
 
     const shouldAnimateSlideIn =
       prevState && prevState.slideIndex !== slideIndex;
-    shouldAnimateSlideIn && this.animateTransitionIn([currentSlide.slide]);
-    this.animateTransitionIn(transitionInElements);
+    if (!this.backwards) {
+      shouldAnimateSlideIn && this.animateTransitionIn([currentSlide.slide]);
+      this.animateTransitionIn(transitionInElements);
+    }
   };
 
   private isElementVisibleAtStep = (
@@ -546,7 +548,9 @@ class Presi {
     prevState: PresiHashState,
     nextState: PresiHashState,
   ) => {
-    await this.animateStateOut(prevState, nextState);
+    if (!this.backwards) {
+      await this.animateStateOut(prevState, nextState);
+    }
 
     if (prevState.slideIndex !== nextState.slideIndex) {
       this.eventBus.publish("slideChange", {
