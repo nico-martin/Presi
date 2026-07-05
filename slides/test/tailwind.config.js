@@ -7,12 +7,7 @@ export default {
     "./theme/**/*.{ts,tsx}",
   ],
   theme: {
-    extend: {
-      fontFamily: {
-        body: ["Nunito Sans", "sans-serif"],
-        heading: ["Nunito", "sans-serif"],
-      },
-    },
+    extend: {},
   },
   plugins: [],
 };

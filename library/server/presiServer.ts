@@ -60,17 +60,36 @@ const presiPlugin = (config: PresiConfig): Plugin => ({
   },
   load(id) {
     if (id !== "virtual:presi-entry") return;
+    const entry = JSON.stringify(`/${config.entry}`);
 
-    return `import render from ${JSON.stringify(`/${config.entry}`)};
+    return `import render from ${entry};
 
 const resolveMountElement = ${config.resolveMountElement.toString()};
 const mountElement = resolveMountElement();
+let cleanup;
 
 if (!mountElement) {
   throw new Error("Presi mount element not found.");
 }
 
-render(mountElement);`;
+const run = (renderPresentation) => {
+  cleanup?.();
+  const nextCleanup = renderPresentation(mountElement);
+  cleanup = typeof nextCleanup === "function" ? nextCleanup : undefined;
+};
+
+run(render);
+
+if (import.meta.hot) {
+  import.meta.hot.accept(${entry}, (mod) => {
+    if (!mod?.default) return;
+    run(mod.default);
+  });
+
+  import.meta.hot.dispose(() => {
+    cleanup?.();
+  });
+}`;
   },
   transformIndexHtml(html) {
     return html.replace("%PRESI_TITLE%", config.title);

@@ -1,11 +1,11 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
-import SlideOne from "./slides/SlideOne.tsx";
-import TypographySlide from "./slides/TypographySlide.tsx";
 import "./style.css";
 
 import { Wrapper, usePresi } from "presi-js/react";
-import Slide from "./theme/Slide.tsx";
+import FeatureTourSlide from "./slides/FeatureTourSlide.tsx";
+import FragmentsSlide from "./slides/FragmentsSlide.tsx";
+import StepControlSlide from "./slides/StepControlSlide.tsx";
 
 function Bkg() {
   const { slideIndex, currentSlide, stepIndex, totalSteps, totalSlides } =
@@ -23,46 +23,16 @@ function Bkg() {
 
 const App: React.FC = () => (
   <Wrapper aspectRatio="16:9">
-    <SlideOne />
-    <TypographySlide />
-    <Slide
-      title="Slide 1"
-      notes={[
-        "Das sind meine Notes für die zweite Seite",
-        "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua.",
-        "At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet",
-        "At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet",
-        "At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet",
-        "At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet",
-        "At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet",
-        "At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet",
-        "At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet",
-        "At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet",
-        "At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet",
-        "At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet",
-        "At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet",
-        "At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet",
-        "At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet",
-        "At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet",
-        "At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet",
-      ]}
-    >
-      <p className="text-7xl font-black tracking-tight text-blue-700">
-        LoremIpsum
-      </p>
-    </Slide>
-    <Slide
-      title="Slide 2"
-      notes={["Das sind meine Notes für die dritte Seite"]}
-    >
-      <p className="text-7xl font-light uppercase tracking-wide text-pink-600">
-        Dolor
-      </p>
-    </Slide>
+    <FeatureTourSlide />
+    <FragmentsSlide />
+    <StepControlSlide />
     <Bkg />
   </Wrapper>
 );
 
 export default function render(mountElement: HTMLElement) {
-  ReactDOM.createRoot(mountElement).render(<App />);
+  const root = ReactDOM.createRoot(mountElement);
+  root.render(<App />);
+
+  return () => root.unmount();
 }

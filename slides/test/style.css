@@ -1,25 +1,9 @@
-@font-face {
-  font-family: "Nunito";
-  src: url("./fonts/Nunito-Variable.ttf") format("truetype");
-  font-display: block;
-  font-style: normal;
-  font-weight: 200 1000;
-}
-
-@font-face {
-  font-family: "Nunito Sans";
-  src: url("./fonts/NunitoSans-Variable.ttf") format("truetype");
-  font-display: block;
-  font-style: normal;
-  font-weight: 200 1000;
-}
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   body {
-    @apply font-body font-extralight text-neutral-950;
+    @apply font-sans font-extralight text-neutral-950;
   }
 }

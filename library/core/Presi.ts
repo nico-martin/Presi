@@ -176,12 +176,17 @@ const injectBaseStyles = () => {
   top: 50%;
   aspect-ratio: var(--aspect-ratio);
   background-color: white;
+  min-height: 0;
+  overflow: hidden;
   transform: translate(-50%, -50%);
   width: 100vw;
 }
 
 .${styles.slide} {
   background-color: #fff;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
   width: 100%;
   aspect-ratio: var(--aspect-ratio);
 }

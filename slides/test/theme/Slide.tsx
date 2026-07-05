@@ -14,13 +14,13 @@ export default function Slide({
 }: ThemeSlideProps) {
   return (
     <PresiSlide
-      className={`space-y-6 p-10 font-body ${className}`}
+      className={`space-y-6 p-10 font-sans ${className}`}
       title={title}
       notes={notes}
       {...props}
     >
       {Boolean(title) && (
-        <h1 className="font-heading text-5xl font-extrabold leading-none tracking-tight text-neutral-950">
+        <h1 className="font-sans text-xl font-extrabold leading-none tracking-tight text-neutral-950">
           {title}
         </h1>
       )}

@@ -75,7 +75,10 @@ const App: React.FC = () => (
 );
 
 export default function render(mountElement: HTMLElement) {
-  ReactDOM.createRoot(mountElement).render(<App />);
+  const root = ReactDOM.createRoot(mountElement);
+  root.render(<App />);
+
+  return () => root.unmount();
 }
 `,
   "theme/Slide.tsx": () => `import { Slide as PresiSlide } from "presi-js/react";
