@@ -20,7 +20,7 @@ export interface PresiConfig {
     host: string;
   };
   export: {
-    name: string;
+    file: string;
   };
   build: {
     outDir: string;
@@ -62,7 +62,7 @@ const defineConfig = (config: PresiUserConfig = {}): PresiConfig => ({
     host: config.present?.host || config.dev?.host || "0.0.0.0",
   },
   export: {
-    name: config.export?.name || "slide",
+    file: config.export?.file || "slide.pdf",
   },
   build: {
     outDir: config.build?.outDir || "dist",

@@ -39,7 +39,7 @@ export default defineConfig({
     port: 4001,
   },
   export: {
-    name: "testslide",
+    file: "testslide.pdf",
   },
   build: {
     outDir: "dist",

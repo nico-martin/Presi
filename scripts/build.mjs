@@ -223,7 +223,7 @@ export interface PresiConfig {
     host: string;
   };
   export: {
-    name: string;
+    file: string;
   };
   build: {
     outDir: string;
@@ -276,7 +276,7 @@ const writePackageJson = async () => {
     `${JSON.stringify(
       {
         name: "presi-js",
-        version: "0.0.8",
+        version: "0.0.9",
         description: "A modern presentation framework",
         type: "module",
         author: "Nico Martin <mail@nico.dev>",

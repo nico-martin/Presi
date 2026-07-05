@@ -253,10 +253,9 @@ export const presentPresentation = async (options: ServerOptions = {}) => {
 };
 
 const getExportPath = (config: PresiConfig) => {
-  const name = config.export.name.endsWith(".pdf")
-    ? config.export.name
-    : `${config.export.name}.pdf`;
-  return resolve(config.root, name);
+  return isAbsolute(config.export.file)
+    ? config.export.file
+    : resolve(config.root, config.export.file);
 };
 
 const removeExistingExport = async (path: string) => {
