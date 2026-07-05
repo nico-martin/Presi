@@ -4,3 +4,4 @@ dist
 packages
 .env
 .idea
+.DS_Store
