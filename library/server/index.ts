@@ -1,4 +1,4 @@
-export { buildPresentation, devPresentation } from "./presiServer";
+export { buildPresentation, devPresentation, exportPresentation, presentPresentation } from "./presiServer";
 export {
   default as defineConfig,
   type PresiConfig,

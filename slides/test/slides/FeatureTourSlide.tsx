@@ -11,7 +11,7 @@ export default function FeatureTourSlide() {
       <div className="grid grid-cols-[1.1fr_0.9fr] gap-8">
         <div className="space-y-5">
           <p className="text-sm font-semibold text-slate-700">
-            Build presentations with React components, URL navigation, speaker
+            Builds presentations with React components, URL navigation, speaker
             notes, fragments, and JavaScript-powered steps.
           </p>
           <div className="grid grid-cols-2 gap-4 text-sm">

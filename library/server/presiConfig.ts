@@ -5,14 +5,26 @@ export interface PresiConfig {
   entry: string;
   title: string;
   resolveMountElement: () => HTMLElement | null;
+  ssl?: {
+    key: string;
+    cert: string;
+  };
   vite: InlineConfig;
   dev: {
     port: number;
     host: string;
     includeNotes: boolean;
   };
+  present: {
+    port: number;
+    host: string;
+  };
+  export: {
+    name: string;
+  };
   build: {
     outDir: string;
+    distFolder?: string;
     includeNotes: boolean;
   };
 }
@@ -22,10 +34,13 @@ export interface PresiUserConfig {
   entry?: string;
   title?: string;
   resolveMountElement?: () => HTMLElement | null;
+  ssl?: PresiConfig["ssl"];
   vite?: InlineConfig & {
     plugins?: PluginOption[];
   };
   dev?: Partial<PresiConfig["dev"]>;
+  present?: Partial<PresiConfig["present"]>;
+  export?: Partial<PresiConfig["export"]>;
   build?: Partial<PresiConfig["build"]>;
 }
 
@@ -35,14 +50,23 @@ const defineConfig = (config: PresiUserConfig = {}): PresiConfig => ({
   title: config.title || "Presi",
   resolveMountElement:
     config.resolveMountElement || (() => document.getElementById("presi")),
+  ssl: config.ssl,
   vite: config.vite || {},
   dev: {
     port: config.dev?.port || (process.env.PORT ? parseInt(process.env.PORT) : 3000),
     host: config.dev?.host || "0.0.0.0",
     includeNotes: config.dev?.includeNotes ?? true,
   },
+  present: {
+    port: config.present?.port || config.dev?.port || (process.env.PORT ? parseInt(process.env.PORT) : 3000),
+    host: config.present?.host || config.dev?.host || "0.0.0.0",
+  },
+  export: {
+    name: config.export?.name || "slide",
+  },
   build: {
     outDir: config.build?.outDir || "dist",
+    distFolder: config.build?.distFolder,
     includeNotes: config.build?.includeNotes ?? false,
   },
 });

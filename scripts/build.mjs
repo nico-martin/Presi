@@ -39,13 +39,13 @@ const builds = [
   {
     entryPoints: ["library/server/index.ts"],
     outfile: "packages/presi-js/dist/server.js",
-    external: ["vite"],
+    external: ["playwright", "vite"],
     platform: "node",
   },
   {
     entryPoints: ["library/server/cli.ts"],
     outfile: "packages/presi-js/dist/cli.js",
-    external: ["vite"],
+    external: ["playwright", "vite"],
     platform: "node",
   },
 ];
@@ -208,14 +208,26 @@ export interface PresiConfig {
   entry: string;
   title: string;
   resolveMountElement: () => HTMLElement | null;
+  ssl?: {
+    key: string;
+    cert: string;
+  };
   vite: InlineConfig;
   dev: {
     port: number;
     host: string;
     includeNotes: boolean;
   };
+  present: {
+    port: number;
+    host: string;
+  };
+  export: {
+    name: string;
+  };
   build: {
     outDir: string;
+    distFolder?: string;
     includeNotes: boolean;
   };
 }
@@ -225,14 +237,19 @@ export interface PresiUserConfig {
   entry?: string;
   title?: string;
   resolveMountElement?: () => HTMLElement | null;
+  ssl?: PresiConfig["ssl"];
   vite?: InlineConfig;
   dev?: Partial<PresiConfig["dev"]>;
+  present?: Partial<PresiConfig["present"]>;
+  export?: Partial<PresiConfig["export"]>;
   build?: Partial<PresiConfig["build"]>;
 }
 
 export declare const defineConfig: (config?: PresiUserConfig) => PresiConfig;
 export declare const devPresentation: (options?: { configFile?: string }) => Promise<void>;
 export declare const buildPresentation: (options?: { configFile?: string }) => Promise<void>;
+export declare const presentPresentation: (options?: { configFile?: string }) => Promise<void>;
+export declare const exportPresentation: (options?: { configFile?: string }) => Promise<void>;
 `,
     ),
     writeFile(
@@ -259,7 +276,7 @@ const writePackageJson = async () => {
     `${JSON.stringify(
       {
         name: "presi-js",
-        version: "0.0.7",
+        version: "0.0.8",
         description: "A modern presentation framework",
         type: "module",
         author: "Nico Martin <mail@nico.dev>",
@@ -298,6 +315,7 @@ const writePackageJson = async () => {
         },
         files: ["dist", "skills", "README.md", "LICENSE"],
         dependencies: {
+          playwright: "^1.45.0",
           vite: "^4.5.0",
         },
         peerDependencies: {

@@ -229,9 +229,14 @@ class Presi {
     }: PresiConfig,
   ) {
     this.calculateFontSize = calculateFontSize;
+    const disableTransitions = Boolean(
+      (globalThis as typeof globalThis & { PRESI_DISABLE_TRANSITIONS?: boolean })
+        .PRESI_DISABLE_TRANSITIONS,
+    );
     this.transitionConfig = {
       ...PRESI_TRANSITION_CONFIG,
       ...transition,
+      ...(disableTransitions ? { duration: 0, delay: 0 } : {}),
       attributes: {
         ...PRESI_TRANSITION_CONFIG.attributes,
         ...transition.attributes,

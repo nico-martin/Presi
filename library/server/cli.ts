@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { createReactPresentation } from "./createReact";
-import { buildPresentation, devPresentation } from "./presiServer";
+import { buildPresentation, devPresentation, exportPresentation, presentPresentation } from "./presiServer";
 
 const main = async () => {
   const command = process.argv[2] || "dev";
@@ -21,10 +21,17 @@ const main = async () => {
     await devPresentation();
   } else if (command === "build") {
     await buildPresentation();
+  } else if (command === "present") {
+    await presentPresentation();
+  } else if (command === "export") {
+    await exportPresentation();
   } else {
     console.error(`Unknown presi command: ${command}`);
     process.exit(1);
   }
 };
 
-main();
+main().catch((error) => {
+  console.error(error instanceof Error ? error.message : error);
+  process.exit(1);
+});
