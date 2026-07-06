@@ -295,6 +295,7 @@ export const exportPresentation = async (options: ServerOptions = {}) => {
     ignoreHTTPSErrors: true,
     viewport: { width: 1600, height: 900 },
     deviceScaleFactor: 1,
+    reducedMotion: "reduce",
   });
 
   try {
