@@ -4,18 +4,6 @@ This file is for agents working on the Presi library repository itself. It is no
 
 For agents working with Presi in a presentation app, use the consumer skills under `skills/`. The build copies them into `packages/presi-js/skills` before npm packaging.
 
-## Limited Data Notes
-
-I am often working from a smartphone hotspot with a limited data plan. Treat network usage as expensive.
-
-- Do not run dependency installs unless explicitly asked. This includes `pnpm install`, `npm install`, `pnpm add`, `npm add`, `npx`, package-manager update commands, and browser/database/font downloads.
-- Prefer local checks that do not download data, such as `pnpm build`, `tsc --noEmit`, existing test scripts, `git diff`, and file inspection.
-- Before any command that may access the network or download data, state what it will do and ask for confirmation.
-- Avoid unsolicited package metadata queries, web fetches, `npm view`, `npm publish`, `npm pack` against the registry, and docs searches unless they are necessary for the task or explicitly requested.
-- If a verification can be done offline, do the offline version. For example, use `npm pack --dry-run` only from local generated package output and avoid registry flags unless publishing/debugging npm specifically.
-- Do not update browserslist/caniuse-lite, Playwright/Puppeteer browser binaries, pnpm, npm, Node, or lockfile dependencies unless explicitly requested.
-- If a command unexpectedly starts downloading large data, stop it if possible and report what happened.
-
 ## Overview
 
 Presi is a presentation framework built as a single npm package from local source. The library code lives under `library/`, is bundled with esbuild into generated output under `packages/presi-js`, and is exercised by example/demo slides in `slides/test`.

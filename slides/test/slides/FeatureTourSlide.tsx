@@ -3,6 +3,7 @@ import Slide from "../theme/Slide.tsx";
 export default function FeatureTourSlide() {
   return (
     <Slide
+      id="feature-tour"
       title="Presi Feature Tour"
       notes={["Use the arrow keys to move through slides and steps."]}
       className="bg-slate-50"

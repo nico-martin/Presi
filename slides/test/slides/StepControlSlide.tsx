@@ -4,6 +4,7 @@ import Slide from "../theme/Slide.tsx";
 export default function StepControlSlide() {
   return (
     <Slide
+      id="step-control"
       title="One Step Can Control Many Things"
       notes={["The first row appears together, then the second row appears."]}
       className="bg-amber-50"

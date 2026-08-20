@@ -54,10 +54,19 @@ Everything that needs `usePresi` must render inside `Wrapper`.
 `Slide` renders the actual slide `<section>` and forwards `className` to that slide surface.
 
 ```tsx
-<Slide title="Intro" className="space-y-6 p-10">
+<Slide id="intro" title="Intro" className="space-y-6 p-10">
   <p>Initial content</p>
 </Slide>
 ```
+
+Use a stable, unique, non-numeric `id` on each authored slide. Presi forwards it to the underlying `<section>` and accepts it in the hash route:
+
+```txt
+/#/intro/0
+/#/intro/2
+```
+
+This route remains valid when slides are reordered. Existing zero-based numeric routes such as `/#/0/2` remain supported.
 
 Recommended theme wrapper:
 
@@ -65,7 +74,11 @@ Recommended theme wrapper:
 import { Slide as PresiSlide } from "presi-js/react";
 import type { ReactNode } from "react";
 
-export default function Slide({ children, title = "", notes }: {
+export default function Slide({
+  children,
+  title = "",
+  notes,
+}: {
   children: ReactNode;
   title?: string;
   notes?: string[];
@@ -122,6 +135,18 @@ Use `data-transition-in-order` or `data-transition-out-order` to override the de
 
 Customize timing or attribute names on `Wrapper` with `transition={{ duration, delay, easing, attributes }}`.
 
+## Agent Visual Check
+
+When authoring or revising a slide, inspect the slide file's `id` and open its exact state without calculating its position in the deck:
+
+```txt
+http://localhost:3000/?presi-static#/intro/2
+```
+
+The query string must appear before the hash. `presi-static` disables Presi transitions and CSS animations or transitions inside the wrapper, while fragments and JavaScript steps still resolve to step `2`. After the page and local fonts are ready, capture a screenshot and inspect it. Use the normal `/#/intro/2` route separately when validating motion.
+
+If a slide has no ID, add a short kebab-case ID based on its purpose. Do not derive its numeric index by searching the deck entry because that index changes when slides are reordered.
+
 ## JavaScript Steps
 
 Use `Step` to run JavaScript at a specific step.
@@ -173,7 +198,8 @@ Rules:
 Use `usePresi` for current state UI.
 
 ```tsx
-const { slideIndex, stepIndex, totalSlides, totalSteps, currentSlide } = usePresi();
+const { slideIndex, stepIndex, totalSlides, totalSteps, currentSlide } =
+  usePresi();
 ```
 
 Indexes are zero-based.

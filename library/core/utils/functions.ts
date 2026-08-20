@@ -27,25 +27,24 @@ export const keyBoardFullscreen = (keyCode: string) => {
 export const parseHash = (
   input: string = "",
 ): {
-  slideIndex: number | false;
+  slideReference: string | false;
   fragmentIndex: number | false;
 } => {
-  const parts = input.split("/");
-  parts.shift();
   const result: {
-    slideIndex: number | false;
+    slideReference: string | false;
     fragmentIndex: number | false;
-  } = { slideIndex: false, fragmentIndex: false };
-  if (parts.length >= 2) {
-    const slideIndex = parseInt(parts[0]);
-    const fragmentIndex = parseInt(parts[1]);
-    if (!isNaN(slideIndex)) {
-      result.slideIndex = slideIndex;
-    }
+  } = { slideReference: false, fragmentIndex: false };
+  const match = input.match(/^#\/([^/]+)\/([^/]+)$/);
+  if (!match) return result;
 
-    if (!isNaN(fragmentIndex)) {
-      result.fragmentIndex = fragmentIndex;
-    }
+  try {
+    result.slideReference = decodeURIComponent(match[1]);
+  } catch {
+    return result;
+  }
+
+  if (/^\d+$/.test(match[2])) {
+    result.fragmentIndex = Number(match[2]);
   }
 
   return result;

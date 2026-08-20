@@ -103,9 +103,30 @@ Presi uses hash routes:
 
 ```txt
 /#/:slideIndex/:stepIndex
+/#/:slideId/:stepIndex
 ```
 
 Indexes are zero-based. Step `0` is the initial slide state.
+
+Give slides stable DOM IDs when they need to be opened directly without knowing their deck position:
+
+```html
+<section id="architecture">...</section>
+```
+
+That slide can then be opened at step `2` with `/#/architecture/2`. Named routes continue to target the same slide when the deck is reordered. Slide IDs are optional, but IDs used for routing must be unique and must not contain only digits. Numeric routes remain supported for slides without IDs and for backward compatibility.
+
+Navigation serializes the destination slide's ID when it has one. Invalid slide or step indexes are clamped to a valid state, while an unknown slide ID returns to the first slide.
+
+## Static Rendering
+
+Add the `presi-static` query parameter to disable Presi transitions and CSS animations or transitions inside the presentation wrapper:
+
+```txt
+/?presi-static#/architecture/2
+```
+
+The query string comes before the hash. Fragments and JavaScript steps still resolve to the requested state. Use this mode for deterministic screenshots and visual inspection; use the normal URL when checking transition behavior.
 
 ## Steps And Fragments
 
@@ -138,7 +159,7 @@ Notes are enabled in dev and disabled in production by default.
 Presi server injects the compile-time global:
 
 ```ts
-PRESI_INCLUDE_NOTES
+PRESI_INCLUDE_NOTES;
 ```
 
 Config overrides:

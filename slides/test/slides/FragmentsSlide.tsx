@@ -3,6 +3,7 @@ import Slide from "../theme/Slide.tsx";
 export default function FragmentsSlide() {
   return (
     <Slide
+      id="fragments"
       title="Fragments and Transitions"
       notes={["Each card is revealed by advancing one step."]}
       className="bg-white"

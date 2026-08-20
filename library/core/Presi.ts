@@ -219,6 +219,7 @@ class Presi {
   private animatedElements = new WeakSet<HTMLElement>();
   private currentState: PresiHashState | null = null;
   private readonly transitionConfig: PresiResolvedTransitionConfig;
+  private readonly transitionsDisabled: boolean;
 
   public constructor(
     wrapper: HTMLElement,
@@ -229,14 +230,18 @@ class Presi {
     }: PresiConfig,
   ) {
     this.calculateFontSize = calculateFontSize;
-    const disableTransitions = Boolean(
-      (globalThis as typeof globalThis & { PRESI_DISABLE_TRANSITIONS?: boolean })
-        .PRESI_DISABLE_TRANSITIONS,
-    );
+    this.transitionsDisabled =
+      Boolean(
+        (
+          globalThis as typeof globalThis & {
+            PRESI_DISABLE_TRANSITIONS?: boolean;
+          }
+        ).PRESI_DISABLE_TRANSITIONS,
+      ) || new URLSearchParams(window.location.search).has("presi-static");
     this.transitionConfig = {
       ...PRESI_TRANSITION_CONFIG,
       ...transition,
-      ...(disableTransitions ? { duration: 0, delay: 0 } : {}),
+      ...(this.transitionsDisabled ? { duration: 0, delay: 0 } : {}),
       attributes: {
         ...PRESI_TRANSITION_CONFIG.attributes,
         ...transition.attributes,
@@ -247,6 +252,7 @@ class Presi {
     this.wrapper = wrapper;
     injectBaseStyles();
     this.wrapper.classList.add(styles.wrapper);
+    this.wrapper.toggleAttribute("data-presi-static", this.transitionsDisabled);
     this.wrapper.style.setProperty("--aspect-ratio", aspect);
 
     const existingPresiStyles = document.getElementById("presi-styles");
@@ -257,6 +263,14 @@ class Presi {
     presiStyles.innerHTML = `.${styles.slide} [${this.transitionConfig.attributes.in}]:not(.visible),
 .${styles.slide} [${this.transitionConfig.attributes.out}].hidden {
   opacity: 0;
+}
+
+[data-presi-static],
+[data-presi-static] *,
+[data-presi-static] *::before,
+[data-presi-static] *::after {
+  animation: none !important;
+  transition: none !important;
 }
 
 @media (min-aspect-ratio: ${aspect}) {
@@ -275,17 +289,16 @@ class Presi {
         steps: this.getStepsFromSlide(slide),
       });
     });
-    const currentHash = this.getCurrentHashState();
+    this.validateSlideIds();
+    const currentHash = this.resolveHashState(window.location.hash);
 
-    if (
-      currentHash.slideIndex === false ||
-      currentHash.fragmentIndex === false
-    ) {
-      window.location.hash = `#/${currentHash.slideIndex || 0}/${
-        currentHash.fragmentIndex || 0
-      }`;
+    if (!currentHash.exact) {
+      window.location.hash = this.serializeHashState(currentHash.state);
     } else {
-      this.drawSlide(currentHash.slideIndex, currentHash.fragmentIndex);
+      this.drawSlide(
+        currentHash.state.slideIndex,
+        currentHash.state.fragmentIndex,
+      );
     }
 
     addEventListener("hashchange", this.onHashChanged);
@@ -321,28 +334,86 @@ class Presi {
     this.cleanInactiveEffects(new Set());
   };
 
-  private getCurrentHashState = (): {
-    slideIndex: number | false;
-    fragmentIndex: number | false;
-  } => parseHash(window.location.hash);
+  private validateSlideIds = () => {
+    const ids = new Set<string>();
+    this.slides.map(({ slide }) => {
+      const id = slide.id;
+      if (!id) return;
+      if (/^\d+$/.test(id)) {
+        throw new Error(`Presi slide id "${id}" must not be numeric.`);
+      }
+      if (ids.has(id)) {
+        throw new Error(`Presi slide id "${id}" must be unique.`);
+      }
+      ids.add(id);
+    });
+  };
+
+  private resolveHashState = (
+    hash: string,
+  ): { state: PresiHashState; exact: boolean } => {
+    const parsed = parseHash(hash);
+    const lastSlideIndex = Math.max(0, this.slides.length - 1);
+    let slideIndex = 0;
+    let slideIsExact = false;
+
+    if (parsed.slideReference !== false) {
+      if (/^\d+$/.test(parsed.slideReference)) {
+        const requestedIndex = Number(parsed.slideReference);
+        slideIndex = Math.min(requestedIndex, lastSlideIndex);
+        slideIsExact = requestedIndex === slideIndex;
+      } else {
+        const namedIndex = this.slides.findIndex(
+          ({ slide }) => slide.id === parsed.slideReference,
+        );
+        if (namedIndex >= 0) {
+          slideIndex = namedIndex;
+          slideIsExact = true;
+        }
+      }
+    }
+
+    const lastFragmentIndex = Math.max(
+      0,
+      (this.slides[slideIndex]?.steps.length || 1) - 1,
+    );
+    const requestedFragmentIndex = parsed.fragmentIndex;
+    const fragmentIndex =
+      requestedFragmentIndex === false
+        ? 0
+        : Math.min(requestedFragmentIndex, lastFragmentIndex);
+
+    return {
+      state: { slideIndex, fragmentIndex },
+      exact:
+        slideIsExact &&
+        requestedFragmentIndex !== false &&
+        requestedFragmentIndex === fragmentIndex,
+    };
+  };
+
+  private serializeHashState = ({
+    slideIndex,
+    fragmentIndex,
+  }: PresiHashState): string => {
+    const id = this.slides[slideIndex]?.slide.id;
+    const slideReference = id ? encodeURIComponent(id) : String(slideIndex);
+    return `#/${slideReference}/${fragmentIndex}`;
+  };
 
   public getCurrentHashStateSave = (): {
     slideIndex: number;
     fragmentIndex: number;
-  } => {
-    const state = parseHash(window.location.hash);
-    return {
-      slideIndex: state.slideIndex || 0,
-      fragmentIndex: state.fragmentIndex || 0,
-    };
-  };
+  } => this.resolveHashState(window.location.hash).state;
 
-  private onHashChanged = (e: HashChangeEvent) => {
-    const { slideIndex, fragmentIndex } = parseHash(
-      "#" + e.newURL.split("#")[1],
-    );
+  private onHashChanged = () => {
+    const resolved = this.resolveHashState(window.location.hash);
+    if (!resolved.exact) {
+      window.location.hash = this.serializeHashState(resolved.state);
+      return;
+    }
 
-    this.drawSlide(slideIndex || 0, fragmentIndex || 0);
+    this.drawSlide(resolved.state.slideIndex, resolved.state.fragmentIndex);
   };
 
   private drawSlide = (slideIndex: number, fragmentIndex: number) => {
@@ -578,7 +649,7 @@ class Presi {
       });
     }
 
-    window.location.hash = `#/${nextState.slideIndex}/${nextState.fragmentIndex}`;
+    window.location.hash = this.serializeHashState(nextState);
   };
 
   private animateStateOut = async (
@@ -692,6 +763,8 @@ class Presi {
     attribute: string,
     direction: "in" | "out",
   ) => {
+    if (this.transitionsDisabled) return;
+
     const animations = this.sortTransitionElements(elements, direction)
       .map((element, index) => {
         const transitionName = this.getTransitionName(element, attribute);
@@ -769,7 +842,7 @@ class Presi {
   };
 
   public getCurrentSlide = (): HTMLElement =>
-    this.slides[this.getCurrentHashState().slideIndex || 0].slide;
+    this.slides[this.getCurrentHashStateSave().slideIndex].slide;
 
   public getTotalSlides = (): number => this.slides.length;
 
