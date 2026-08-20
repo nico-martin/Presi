@@ -133,7 +133,17 @@ Supported values are `fade`, `fade-up`, `fade-left`, `fade-right`, `fade-down`, 
 
 Use `data-transition-in-order` or `data-transition-out-order` to override the default DOM-order stagger.
 
-Customize timing or attribute names on `Wrapper` with `transition={{ duration, delay, easing, attributes }}`.
+Customize timing or attribute names on `Wrapper` with `transition={{ duration, delay, overlap, easing, attributes }}`.
+
+Use `overlap` to start the incoming transition before the outgoing transition finishes:
+
+```tsx
+<Wrapper aspectRatio="16:9" transition={{ duration: 600, overlap: 200 }}>
+  {slides}
+</Wrapper>
+```
+
+`overlap` is measured in milliseconds and defaults to `0`. In this example, both transitions run together for the final `200ms` of the outgoing transition. The outgoing slide stays visible underneath the incoming slide until its transition completes. Stagger delays count toward the outgoing sequence duration.
 
 ## Agent Visual Check
 

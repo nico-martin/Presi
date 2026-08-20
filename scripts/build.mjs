@@ -77,6 +77,7 @@ const writeTypes = async () => {
 export interface PresiTransitionConfig {
   duration?: number;
   delay?: number;
+  overlap?: number;
   easing?: string;
   attributes?: Partial<PresiTransitionAttributes>;
 }
@@ -116,6 +117,7 @@ export type PresiStepFunction = () => PresiStepCleanup;
 export declare const PRESI_TRANSITION_CONFIG: {
   readonly duration: 200;
   readonly delay: 100;
+  readonly overlap: 0;
   readonly easing: "cubic-bezier(.2, .85, .25, 1)";
   readonly attributes: {
     readonly in: "data-transition-in";
@@ -276,7 +278,7 @@ const writePackageJson = async () => {
     `${JSON.stringify(
       {
         name: "presi-js",
-        version: "0.0.11",
+        version: "0.0.12",
         description: "A modern presentation framework",
         type: "module",
         author: "Nico Martin <mail@nico.dev>",

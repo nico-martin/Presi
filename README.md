@@ -208,6 +208,7 @@ new Presi(wrapper, {
   transition: {
     duration: 300,
     delay: 75,
+    overlap: 100,
     easing: "ease-out",
     attributes: {
       in: "data-enter",
@@ -227,11 +228,14 @@ React users can pass the same transition options to `Wrapper`:
   transition={{
     duration: 300,
     delay: 75,
+    overlap: 100,
   }}
 >
   <Slide title="Intro">Hello</Slide>
 </Wrapper>
 ```
+
+`overlap` is the number of milliseconds that the outgoing and incoming transitions run concurrently. With `duration: 300` and `overlap: 100`, the incoming transition starts `200ms` after the outgoing transition begins. The default is `0`, which waits for the complete outgoing transition before showing the next slide.
 
 `usePresi` exposes presentation state:
 

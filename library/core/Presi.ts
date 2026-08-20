@@ -31,6 +31,7 @@ export interface PresiTransitionAttributes {
 export interface PresiTransitionConfig {
   duration?: number;
   delay?: number;
+  overlap?: number;
   easing?: string;
   attributes?: Partial<PresiTransitionAttributes>;
 }
@@ -44,6 +45,7 @@ export interface PresiConfig {
 export const PRESI_TRANSITION_CONFIG: {
   duration: number;
   delay: number;
+  overlap: number;
   easing: string;
   attributes: PresiTransitionAttributes;
   transitions: Record<
@@ -56,6 +58,7 @@ export const PRESI_TRANSITION_CONFIG: {
 } = {
   duration: 600,
   delay: 300,
+  overlap: 0,
   easing: "cubic-bezier(.2, .85, .25, 1)",
   attributes: {
     in: "data-transition-in",
@@ -149,10 +152,16 @@ type PresiTransitionName = keyof typeof PRESI_TRANSITION_CONFIG.transitions;
 type PresiResolvedTransitionConfig = {
   duration: number;
   delay: number;
+  overlap: number;
   easing: string;
   attributes: PresiTransitionAttributes;
   transitions: typeof PRESI_TRANSITION_CONFIG.transitions;
 };
+
+interface PresiTransitionRun {
+  duration: number;
+  finished: Promise<void>;
+}
 
 const styles = {
   wrapper: "presi-wrapper",
@@ -183,10 +192,12 @@ const injectBaseStyles = () => {
 }
 
 .${styles.slide} {
+  inset: 0;
   background-color: #fff;
   height: 100%;
   min-height: 0;
   overflow: hidden;
+  position: absolute;
   width: 100%;
   aspect-ratio: var(--aspect-ratio);
 }
@@ -217,6 +228,7 @@ class Presi {
   }> = [];
   private activeEffects = new Map<string, PresiStepCleanup>();
   private animatedElements = new WeakSet<HTMLElement>();
+  private outgoingSlides = new Set<HTMLElement>();
   private currentState: PresiHashState | null = null;
   private readonly transitionConfig: PresiResolvedTransitionConfig;
   private readonly transitionsDisabled: boolean;
@@ -419,7 +431,9 @@ class Presi {
   private drawSlide = (slideIndex: number, fragmentIndex: number) => {
     const prevState = this.currentState;
     this.slides.map(({ slide }) => {
-      slide.style.display = "none";
+      if (!this.outgoingSlides.has(slide)) {
+        slide.style.display = "none";
+      }
     });
     const currentSlide = this.slides[slideIndex];
     if (prevState?.slideIndex !== slideIndex) {
@@ -630,7 +644,17 @@ class Presi {
     nextState: PresiHashState,
   ) => {
     if (!this.backwards) {
-      await this.animateStateOut(prevState, nextState);
+      const transition = this.animateStateOut(prevState, nextState);
+      const overlapStarted = await this.waitForTransitionOverlap(transition);
+
+      if (overlapStarted && prevState.slideIndex !== nextState.slideIndex) {
+        const outgoingSlide = this.slides[prevState.slideIndex].slide;
+        this.outgoingSlides.add(outgoingSlide);
+        transition.finished.then(
+          () => this.hideOutgoingSlide(outgoingSlide),
+          () => this.hideOutgoingSlide(outgoingSlide),
+        );
+      }
     }
 
     if (prevState.slideIndex !== nextState.slideIndex) {
@@ -652,12 +676,37 @@ class Presi {
     window.location.hash = this.serializeHashState(nextState);
   };
 
-  private animateStateOut = async (
+  private waitForTransitionOverlap = async (
+    transition: PresiTransitionRun,
+  ): Promise<boolean> => {
+    const overlap = Math.max(0, this.transitionConfig.overlap);
+    if (overlap === 0 || transition.duration === 0) {
+      await transition.finished;
+      return false;
+    }
+
+    const overlapDelay = Math.max(0, transition.duration - overlap);
+    return Promise.race([
+      transition.finished.then(() => false),
+      new Promise<true>((resolve) =>
+        setTimeout(() => resolve(true), overlapDelay),
+      ),
+    ]);
+  };
+
+  private hideOutgoingSlide = (slide: HTMLElement) => {
+    this.outgoingSlides.delete(slide);
+    if (this.getCurrentSlide() !== slide) {
+      slide.style.display = "none";
+    }
+  };
+
+  private animateStateOut = (
     prevState: PresiHashState,
     nextState: PresiHashState,
-  ) => {
+  ): PresiTransitionRun => {
     const prevSlide = this.slides[prevState.slideIndex];
-    if (!prevSlide) return;
+    if (!prevSlide) return { duration: 0, finished: Promise.resolve() };
 
     const elements: HTMLElement[] = [];
     if (prevState.slideIndex !== nextState.slideIndex) {
@@ -685,7 +734,7 @@ class Presi {
       });
     }
 
-    await this.animateTransitionOut(elements);
+    return this.animateTransitionOut(elements);
   };
 
   private getVisibleTransitionOutElements = (
@@ -743,27 +792,28 @@ class Presi {
     return offset.startsWith("-") ? offset.slice(1) : `-${offset}`;
   };
 
-  private animateTransitionIn = (elements: HTMLElement[]) => {
+  private animateTransitionIn = (elements: HTMLElement[]) =>
     this.animateTransitions(
       elements,
       this.transitionConfig.attributes.in,
       "in",
     );
-  };
 
-  private animateTransitionOut = async (elements: HTMLElement[]) =>
+  private animateTransitionOut = (elements: HTMLElement[]) =>
     this.animateTransitions(
       elements,
       this.transitionConfig.attributes.out,
       "out",
     );
 
-  private animateTransitions = async (
+  private animateTransitions = (
     elements: HTMLElement[],
     attribute: string,
     direction: "in" | "out",
-  ) => {
-    if (this.transitionsDisabled) return;
+  ): PresiTransitionRun => {
+    if (this.transitionsDisabled) {
+      return { duration: 0, finished: Promise.resolve() };
+    }
 
     const animations = this.sortTransitionElements(elements, direction)
       .map((element, index) => {
@@ -794,7 +844,7 @@ class Presi {
           Boolean(entry),
       );
 
-    await Promise.all(
+    const finished = Promise.all(
       animations.map(({ animation, element }) =>
         animation.finished.finally(() => {
           animation.commitStyles();
@@ -802,7 +852,18 @@ class Presi {
           animation.cancel();
         }),
       ),
+    ).then(() => undefined);
+
+    const duration = animations.reduce(
+      (longest, { animation }) =>
+        Math.max(
+          longest,
+          Number(animation.effect?.getComputedTiming().endTime) || 0,
+        ),
+      0,
     );
+
+    return { duration, finished };
   };
 
   private resetAnimatedStyles = (slide: HTMLElement) => {

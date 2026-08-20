@@ -150,7 +150,9 @@ Transitions use configured timing by default. `pop` runs for `400ms` with `cubic
 
 The constants and attribute names are exported as `PRESI_TRANSITION_CONFIG` from `presi-js/core`.
 
-Override timing and attribute names when creating `Presi` with `transition: { duration, delay, easing, attributes }`.
+Override timing and attribute names when creating `Presi` with `transition: { duration, delay, overlap, easing, attributes }`.
+
+`overlap` is measured in milliseconds and defaults to `0`. It controls how long outgoing and incoming transitions run concurrently. For example, `transition: { duration: 600, overlap: 200 }` starts the incoming transition `400ms` after the outgoing transition starts. The outgoing slide remains visible underneath until its transition finishes. Stagger delays are included in the outgoing sequence duration.
 
 ## Notes
 

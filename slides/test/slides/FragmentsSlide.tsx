@@ -7,6 +7,7 @@ export default function FragmentsSlide() {
       title="Fragments and Transitions"
       notes={["Each card is revealed by advancing one step."]}
       className="bg-white"
+      data-transition-in="fade-left"
       data-transition-out="fade-left"
     >
       <p className="max-w-3xl text-sm text-slate-600">

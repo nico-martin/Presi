@@ -7,6 +7,7 @@ interface PresiConfig {
 interface PresiTransitionConfig {
   duration?: number;
   delay?: number;
+  overlap?: number;
   easing?: string;
   attributes?: Partial<PresiTransitionAttributes>;
 }
