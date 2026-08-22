@@ -5,7 +5,10 @@ import "./style.css";
 import { Wrapper, usePresi } from "presi-js/react";
 import FeatureTourSlide from "./slides/FeatureTourSlide.tsx";
 import FragmentsSlide from "./slides/FragmentsSlide.tsx";
+import JourneySlide from "./slides/JourneySlide.tsx";
+import LifecycleSlide from "./slides/LifecycleSlide.tsx";
 import StepControlSlide from "./slides/StepControlSlide.tsx";
+import TransitionsSlide from "./slides/TransitionsSlide.tsx";
 
 function Bkg() {
   const { slideIndex, currentSlide, stepIndex, totalSteps, totalSlides } =
@@ -24,8 +27,11 @@ function Bkg() {
 const App: React.FC = () => (
   <Wrapper aspectRatio="16:9" transition={{ duration: 800, inDelay: 200 }}>
     <FeatureTourSlide />
+    <TransitionsSlide />
     <FragmentsSlide />
     <StepControlSlide />
+    <LifecycleSlide />
+    <JourneySlide />
     <Bkg />
   </Wrapper>
 );

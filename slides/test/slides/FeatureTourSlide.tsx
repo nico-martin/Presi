@@ -1,13 +1,19 @@
-import { Fragment } from "presi-js/react";
+import { useState } from "react";
+import { Fragment, Step } from "presi-js/react";
 import Slide from "../theme/Slide.tsx";
 
 export default function FeatureTourSlide() {
+  const [count, setCount] = useState(0);
+
   return (
     <>
       <Slide
         id="feature-tour"
         title="Presi Feature Tour"
-        notes={["Use the arrow keys to move through slides and steps."]}
+        notes={[
+          "Use the arrow keys to move through slides and steps.",
+          "Each step advances the counter; after 3 the next slide follows.",
+        ]}
         className="bg-slate-50"
         transitionOut="fade-left"
       >
@@ -41,11 +47,28 @@ export default function FeatureTourSlide() {
               <p className="text-xs font-bold uppercase tracking-[0.35em] text-cyan-300">
                 presi-js
               </p>
-              <p className="text-xl font-black leading-none">React slides</p>
-              <p className="text-sm text-slate-300">with progressive steps</p>
+              <p className="text-6xl font-black leading-none tabular-nums">
+                {count}
+              </p>
+              <p className="text-sm text-slate-300">
+                counted up by one {"<Step />"} per step
+              </p>
             </div>
           </div>
         </div>
+        {/* One Step per step index: run() fires when the step becomes active,
+            the returned cleanup when stepping back — so the counter follows
+            navigation in both directions and on deep links. */}
+        {[1, 2, 3].map((stepIndex) => (
+          <Step
+            key={stepIndex}
+            stepIndex={stepIndex}
+            run={() => {
+              setCount((current) => current + 1);
+              return () => setCount((current) => current - 1);
+            }}
+          />
+        ))}
       </Slide>
       <Slide
         id="template-big-statement"
