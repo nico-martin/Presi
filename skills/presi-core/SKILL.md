@@ -164,3 +164,6 @@ pnpm exec presi-js export
 ```
 
 `present` builds and serves the static deck. `export` builds with transitions disabled and renders every slide step to a PDF (one page per step) at `export.file`.
+
+During PDF export, `usePresi().isExporting` is `true`. Presentation components
+can use this to replace interactive-only content with a static explanation.

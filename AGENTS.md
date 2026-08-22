@@ -59,13 +59,14 @@ import { Wrapper, Slide, Fragment, Step, usePresi } from "presi-js/react";
 
 ```ts
 {
+  isExporting: boolean;
   slideIndex: number;
   stepIndex: number;
   totalSlides: number;
   totalSteps: number;
   currentSlide: {
     title: string;
-  };
+  }
 }
 ```
 

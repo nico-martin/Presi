@@ -61,6 +61,7 @@ export interface DeckConfig {
 }
 
 export interface PresiSnapshot {
+  isExporting: boolean;
   slideIndex: number;
   stepIndex: number;
   totalSlides: number;
@@ -134,6 +135,13 @@ export class DeckStore {
   private outgoingSlides = new Set<HTMLElement>();
   private listeners = new Set<() => void>();
   private snapshot: PresiSnapshot = {
+    isExporting: Boolean(
+      (
+        globalThis as typeof globalThis & {
+          PRESI_EXPORT_MODE?: boolean;
+        }
+      ).PRESI_EXPORT_MODE,
+    ),
     slideIndex: 0,
     stepIndex: 0,
     totalSlides: 0,
@@ -255,10 +263,12 @@ export class DeckStore {
     (
       window as typeof window & {
         __PRESI_DECK__?: {
+          aspectRatio: `${number}:${number}`;
           slides: Array<{ id?: string; title: string; stepCount: number }>;
         };
       }
     ).__PRESI_DECK__ = {
+      aspectRatio: this.config.aspectRatio,
       slides: this.slides.map(({ registration, timeline }) => ({
         id: registration.id,
         title: registration.title,
@@ -344,8 +354,10 @@ export class DeckStore {
       stepCount: timeline.length,
     }));
 
+  // Always resolves from the hash: it updates synchronously on navigation,
+  // while currentState lags until the async hashchange draw. Reading the
+  // stale value would make a rapid next() recompute the same hash (a no-op).
   public getState = (): PresiState =>
-    this.currentState ??
     resolveHashState(window.location.hash, this.slideInfos()).state;
 
   public getNextState = (): PresiState => {
@@ -375,6 +387,7 @@ export class DeckStore {
     const state = this.getState();
     const currentSlide = this.slides[state.slideIndex];
     const next: PresiSnapshot = {
+      isExporting: this.snapshot.isExporting,
       slideIndex: state.slideIndex,
       stepIndex: state.stepIndex,
       totalSlides: this.slides.length,
@@ -442,6 +455,17 @@ export class DeckStore {
         );
 
         timelineElement.element.classList.toggle("visible", isVisible);
+
+        // Backwards navigation runs no animations, so kill any in-flight ones
+        // on elements whose visibility flips.
+        if (wasVisible !== isVisible && this.backwards) {
+          timelineElement.element
+            .getAnimations()
+            .map((animation) => animation.cancel());
+        }
+        // Drop committed inline styles so the visibility classes decide again;
+        // an element animating in below is driven by its new animation anyway.
+        this.transitionEngine.clearCommittedStyles(timelineElement.element);
 
         if (!wasVisible && isVisible && timelineElement.transitionIn) {
           transitionInTargets.push({

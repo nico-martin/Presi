@@ -14,7 +14,9 @@ const rawPlugin = {
     }));
 
     build.onLoad({ filter: /.*/, namespace: "raw-loader" }, async (args) => ({
-      contents: `export default ${JSON.stringify(await readFile(args.path, "utf8"))};`,
+      contents: `export default ${JSON.stringify(
+        await readFile(args.path, "utf8"),
+      )};`,
       loader: "js",
     }));
   },
@@ -142,6 +144,7 @@ export interface StepProps {
 }
 
 export interface PresiSnapshot {
+  isExporting: boolean;
   slideIndex: number;
   stepIndex: number;
   totalSlides: number;
@@ -163,9 +166,7 @@ export declare const usePresi: () => PresiContextValue;
 `;
 
 const writeTypes = async () => {
-  await Promise.all([
-      mkdir("packages/presi-js/dist", { recursive: true }),
-  ]);
+  await Promise.all([mkdir("packages/presi-js/dist", { recursive: true })]);
 
   await Promise.all([
     writeFile("packages/presi-js/dist/react.d.ts", reactTypes),
@@ -313,6 +314,8 @@ if (watch) {
   await writePackageFiles();
   console.log("Watching library bundles...");
 } else {
-  await Promise.all(builds.map((build) => esbuild.build({ ...options, ...build })));
+  await Promise.all(
+    builds.map((build) => esbuild.build({ ...options, ...build })),
+  );
   await writePackageFiles();
 }

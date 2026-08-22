@@ -149,6 +149,7 @@ const createViteConfig = (
       "globalThis.PRESI_DISABLE_TRANSITIONS": JSON.stringify(
         command === "export",
       ),
+      "globalThis.PRESI_EXPORT_MODE": JSON.stringify(command === "export"),
     },
     plugins: [presiPlugin(config)],
     server: {
@@ -280,6 +281,13 @@ const removeExistingExport = async (path: string) => {
   }
 };
 
+const CSS_PIXELS_PER_INCH = 96;
+const PDF_WIDTH_INCHES = 16;
+const DEFAULT_PDF_HEIGHT_INCHES = 9;
+const PDF_VIEWPORT_WIDTH = PDF_WIDTH_INCHES * CSS_PIXELS_PER_INCH;
+const DEFAULT_PDF_VIEWPORT_HEIGHT =
+  DEFAULT_PDF_HEIGHT_INCHES * CSS_PIXELS_PER_INCH;
+
 export const exportPresentation = async (options: ServerOptions = {}) => {
   const config = await loadConfig(options.configFile, "build");
   await writeHtml(config);
@@ -307,7 +315,10 @@ export const exportPresentation = async (options: ServerOptions = {}) => {
   });
   const context = await browser.newContext({
     ignoreHTTPSErrors: true,
-    viewport: { width: 1600, height: 900 },
+    viewport: {
+      width: PDF_VIEWPORT_WIDTH,
+      height: DEFAULT_PDF_VIEWPORT_HEIGHT,
+    },
     deviceScaleFactor: 1,
     reducedMotion: "reduce",
   });
@@ -323,19 +334,42 @@ export const exportPresentation = async (options: ServerOptions = {}) => {
       Boolean(
         (
           window as typeof window & {
-            __PRESI_DECK__?: { slides: Array<{ stepCount: number }> };
+            __PRESI_DECK__?: {
+              aspectRatio: `${number}:${number}`;
+              slides: Array<{ stepCount: number }>;
+            };
           }
         ).__PRESI_DECK__,
       ),
     );
-    const slides = await page.evaluate(
+    const deck = await page.evaluate(
       () =>
         (
           window as typeof window & {
-            __PRESI_DECK__?: { slides: Array<{ stepCount: number }> };
+            __PRESI_DECK__?: {
+              aspectRatio: `${number}:${number}`;
+              slides: Array<{ stepCount: number }>;
+            };
           }
-        ).__PRESI_DECK__!.slides,
+        ).__PRESI_DECK__!,
     );
+    const [aspectWidth, aspectHeight] = deck.aspectRatio.split(":").map(Number);
+    const pdfHeightInches = PDF_WIDTH_INCHES * (aspectHeight / aspectWidth);
+    await page.setViewportSize({
+      width: PDF_VIEWPORT_WIDTH,
+      height: Math.round(pdfHeightInches * CSS_PIXELS_PER_INCH),
+    });
+    await page.evaluate(
+      () =>
+        new Promise<void>((resolveFrame) =>
+          requestAnimationFrame(() =>
+            requestAnimationFrame(() => resolveFrame()),
+          ),
+        ),
+    );
+    await page.evaluate(() => document.fonts?.ready.then(() => true));
+
+    const slides = deck.slides;
 
     const styles = await page.evaluate(() =>
       Array.from(document.styleSheets)
@@ -385,12 +419,13 @@ export const exportPresentation = async (options: ServerOptions = {}) => {
     }
 
     const pdfPage = await context.newPage();
+    await pdfPage.emulateMedia({ media: "screen" });
     await pdfPage.setContent(
       `<!doctype html><html><head><base href="${baseUrl}/"><style>${styles}</style><style>
-        @page { size: 16in 9in; margin: 0; }
+        @page { size: ${PDF_WIDTH_INCHES}in ${pdfHeightInches}in; margin: 0; }
         html { font-size: ${rootFontSize}; }
         html, body { margin: 0; padding: 0; }
-        .page { background: #000; break-after: page; height: 9in; overflow: hidden; position: relative; width: 16in; }
+        .page { background: #000; break-after: page; height: ${pdfHeightInches}in; overflow: hidden; position: relative; width: ${PDF_WIDTH_INCHES}in; }
         .page:last-child { break-after: auto; }
         .page .presi-wrapper {
           height: 100% !important;
@@ -416,8 +451,8 @@ export const exportPresentation = async (options: ServerOptions = {}) => {
     await pdfPage.pdf({
       path: outputPath,
       printBackground: true,
-      width: "16in",
-      height: "9in",
+      width: `${PDF_WIDTH_INCHES}in`,
+      height: `${pdfHeightInches}in`,
       margin: { top: 0, right: 0, bottom: 0, left: 0 },
     });
 

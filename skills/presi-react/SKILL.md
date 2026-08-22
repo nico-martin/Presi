@@ -97,7 +97,11 @@ type ThemeSlideProps = Omit<ComponentProps<typeof PresiSlide>, "children"> & {
   children: ReactNode;
 };
 
-export default function Slide({ children, title = "", ...props }: ThemeSlideProps) {
+export default function Slide({
+  children,
+  title = "",
+  ...props
+}: ThemeSlideProps) {
   return (
     <PresiSlide className="space-y-6 p-10" title={title} {...props}>
       {Boolean(title) && <h1 className="font-heading text-5xl">{title}</h1>}
@@ -238,11 +242,21 @@ Rules:
 Use `usePresi` for current state UI.
 
 ```tsx
-const { slideIndex, stepIndex, totalSlides, totalSteps, currentSlide } =
-  usePresi();
+const {
+  isExporting,
+  slideIndex,
+  stepIndex,
+  totalSlides,
+  totalSteps,
+  currentSlide,
+} = usePresi();
 ```
 
 Indexes are zero-based. Only components calling `usePresi` re-render on navigation; slides themselves do not.
+
+`isExporting` is `true` only for PDF export builds. Use it to replace
+interactive demos with useful static context for PDF readers. It is `false`
+for normal web presentations and `presi-static` screenshot mode.
 
 ## Notes
 

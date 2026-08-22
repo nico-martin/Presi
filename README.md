@@ -145,9 +145,13 @@ Step semantics:
 
 ```tsx
 <Slide title="JS Step">
-  <Fragment as="p" stepIndex={1}>First fragment</Fragment>
+  <Fragment as="p" stepIndex={1}>
+    First fragment
+  </Fragment>
   <Step stepIndex={2} run={() => console.log("hello")} />
-  <Fragment as="p" stepIndex={3}>Second fragment</Fragment>
+  <Fragment as="p" stepIndex={3}>
+    Second fragment
+  </Fragment>
 </Slide>
 ```
 
@@ -219,17 +223,24 @@ Navigation is instant: advancing always updates the URL state immediately, and n
 
 `Wrapper` also accepts `calculateFontSize` to control the root font size that all `rem`-based slide styling scales from (default: `window.innerWidth / 48`).
 
-`usePresi` exposes presentation state:
+`usePresi` exposes presentation and render state:
 
 ```tsx
-const { slideIndex, stepIndex, totalSlides, totalSteps, currentSlide } =
-  usePresi();
+const {
+  isExporting,
+  slideIndex,
+  stepIndex,
+  totalSlides,
+  totalSteps,
+  currentSlide,
+} = usePresi();
 ```
 
 Current shape:
 
 ```ts
 {
+  isExporting: boolean;
   slideIndex: number;
   stepIndex: number;
   totalSlides: number;
@@ -239,6 +250,10 @@ Current shape:
   }
 }
 ```
+
+`isExporting` is `true` only while Presi is rendering the PDF export. Use it
+to replace interactive content with an informative static preview. It remains
+`false` in the web presentation, including `presi-static` screenshot mode.
 
 ### `presi-js/server`
 

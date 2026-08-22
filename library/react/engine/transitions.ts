@@ -237,14 +237,18 @@ export class TransitionEngine {
     return { duration, finished };
   };
 
+  // Removes the inline styles a finished animation committed, so the CSS
+  // visibility classes take over again.
+  public clearCommittedStyles = (element: HTMLElement) => {
+    if (!this.animatedElements.has(element)) return;
+
+    element.style.opacity = "";
+    element.style.transform = "";
+  };
+
   public resetAnimatedStyles = (root: HTMLElement) => {
     [root, ...Array.from(root.querySelectorAll<HTMLElement>("*"))].map(
-      (element) => {
-        if (!this.animatedElements.has(element)) return;
-
-        element.style.opacity = "";
-        element.style.transform = "";
-      },
+      (element) => this.clearCommittedStyles(element),
     );
   };
 }
