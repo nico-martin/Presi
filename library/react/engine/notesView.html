@@ -233,8 +233,8 @@
               upcomingIframe.style.aspectRatio = aspectRatio;
             }
 
-            currentIframe.src = `${sourceWindowOrigin}#/${data.payload.current.slideIndex}/${data.payload.current.fragmentIndex}"`;
-            upcomingIframe.src = `${sourceWindowOrigin}#/${data.payload.upcoming.slideIndex}/${data.payload.upcoming.fragmentIndex}"`;
+            currentIframe.src = `${sourceWindowOrigin}#/${data.payload.current.slideIndex}/${data.payload.current.stepIndex}`;
+            upcomingIframe.src = `${sourceWindowOrigin}#/${data.payload.upcoming.slideIndex}/${data.payload.upcoming.stepIndex}`;
           }
         },
         false,
@@ -245,7 +245,7 @@
         .addEventListener("click", () => {
           sourceWindow.postMessage(
             JSON.stringify({
-              type: "keyup",
+              type: "navigate",
               payload: "ArrowLeft",
             }),
             sourceWindowOrigin,
@@ -257,17 +257,25 @@
         .addEventListener("click", () => {
           sourceWindow.postMessage(
             JSON.stringify({
-              type: "keyup",
+              type: "navigate",
               payload: "ArrowRight",
             }),
             sourceWindowOrigin,
           );
         });
 
-      addEventListener("keyup", (e) => {
+      addEventListener("keydown", (e) => {
+        if (
+          e.target?.closest?.(
+            'input, textarea, select, [contenteditable]:not([contenteditable="false"])',
+          )
+        ) {
+          return;
+        }
+
         sourceWindow.postMessage(
           JSON.stringify({
-            type: "keyup",
+            type: "navigate",
             payload: e.code,
           }),
           sourceWindowOrigin,

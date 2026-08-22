@@ -1,27 +1,24 @@
 import React from "react";
+import { DeckContext } from "./context.ts";
+import type { PresiSnapshot } from "./engine/deckStore.ts";
 
 export interface PresiSlideProps {
   title: string;
 }
 
-export interface PresiContextValue {
-  slideIndex: number;
-  stepIndex: number;
-  totalSlides: number;
-  totalSteps: number;
-  currentSlide: PresiSlideProps;
-}
+export type PresiContextValue = PresiSnapshot;
 
-export const PresiContext = React.createContext<PresiContextValue>({
-  slideIndex: 0,
-  stepIndex: 0,
-  totalSlides: 0,
-  totalSteps: 0,
-  currentSlide: {
-    title: "",
-  },
-});
+const usePresi = (): PresiContextValue => {
+  const store = React.useContext(DeckContext);
+  if (!store) {
+    throw new Error("usePresi must be used inside a <Wrapper>.");
+  }
 
-const usePresi = (): PresiContextValue => React.useContext(PresiContext);
+  return React.useSyncExternalStore(
+    store.subscribe,
+    store.getSnapshot,
+    store.getSnapshot,
+  );
+};
 
 export default usePresi;

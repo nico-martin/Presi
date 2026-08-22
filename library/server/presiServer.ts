@@ -1,6 +1,11 @@
 import { createReadStream, readFileSync } from "node:fs";
 import { access, mkdir, stat, unlink, writeFile } from "node:fs/promises";
-import { createServer as createHttpServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
+import {
+  createServer as createHttpServer,
+  type IncomingMessage,
+  type Server,
+  type ServerResponse,
+} from "node:http";
 import { createServer as createHttpsServer } from "node:https";
 import { isAbsolute, join, resolve, sep } from "node:path";
 import {
@@ -11,7 +16,10 @@ import {
   type InlineConfig,
   type Plugin,
 } from "vite";
-import defaultConfig, { type PresiConfig, type PresiUserConfig } from "./presiConfig";
+import defaultConfig, {
+  type PresiConfig,
+  type PresiUserConfig,
+} from "./presiConfig";
 
 interface ServerOptions {
   configFile?: string;
@@ -21,7 +29,9 @@ const loadConfig = async (
   configFile = "presi.config.ts",
   command: "serve" | "build" = "serve",
 ): Promise<PresiConfig> => {
-  const configPath = isAbsolute(configFile) ? configFile : resolve(process.cwd(), configFile);
+  const configPath = isAbsolute(configFile)
+    ? configFile
+    : resolve(process.cwd(), configFile);
   const loaded = await loadConfigFromFile(
     { command, mode: command === "serve" ? "development" : "production" },
     configPath,
@@ -35,7 +45,8 @@ const getBuildOutDir = (config: PresiConfig) =>
     ? join(config.build.outDir, config.build.distFolder)
     : config.build.outDir;
 
-const readSslFile = (path: string) => readFileSync(isAbsolute(path) ? path : resolve(process.cwd(), path));
+const readSslFile = (path: string) =>
+  readFileSync(isAbsolute(path) ? path : resolve(process.cwd(), path));
 
 const getHttpsOptions = (config: PresiConfig) => {
   if (!config.ssl) return undefined;
@@ -118,25 +129,16 @@ if (import.meta.hot) {
   },
 });
 
-const createHtmlPlugin = (config: PresiConfig): Plugin => ({
-  name: "presi-html-fallback",
-  configureServer(server) {
-    server.middlewares.use((req, res, next) => {
-      if (req.url !== "/" && req.url !== "/index.html") {
-        next();
-        return;
-      }
-
-      server.transformIndexHtml(req.url, html(config)).then((transformed) => {
-        res.setHeader("Content-Type", "text/html");
-        res.end(transformed);
-      });
-    });
-  },
-});
-
-const createViteConfig = (config: PresiConfig, command: "dev" | "build" | "present" | "export"): InlineConfig => {
-  const includeNotes = command === "dev" ? config.dev.includeNotes : command === "build" ? config.build.includeNotes : true;
+const createViteConfig = (
+  config: PresiConfig,
+  command: "dev" | "build" | "present" | "export",
+): InlineConfig => {
+  const includeNotes =
+    command === "dev"
+      ? config.dev.includeNotes
+      : command === "build"
+      ? config.build.includeNotes
+      : true;
   const outDir = getBuildOutDir(config);
   const https = getHttpsOptions(config);
 
@@ -144,9 +146,11 @@ const createViteConfig = (config: PresiConfig, command: "dev" | "build" | "prese
     root: config.root,
     define: {
       PRESI_INCLUDE_NOTES: JSON.stringify(String(includeNotes)),
-      "globalThis.PRESI_DISABLE_TRANSITIONS": JSON.stringify(command === "export"),
+      "globalThis.PRESI_DISABLE_TRANSITIONS": JSON.stringify(
+        command === "export",
+      ),
     },
-    plugins: [createHtmlPlugin(config), presiPlugin(config)],
+    plugins: [presiPlugin(config)],
     server: {
       host: config.dev.host,
       port: config.dev.port,
@@ -190,9 +194,15 @@ const getContentType = (path: string) => {
   return contentTypes[extension] || "application/octet-stream";
 };
 
-const createStaticServer = (outDir: string, https?: ReturnType<typeof getHttpsOptions>): Server => {
+const createStaticServer = (
+  outDir: string,
+  https?: ReturnType<typeof getHttpsOptions>,
+): Server => {
   const requestHandler = async (req: IncomingMessage, res: ServerResponse) => {
-    const url = new URL(req.url || "/", `http://${req.headers.host || "localhost"}`);
+    const url = new URL(
+      req.url || "/",
+      `http://${req.headers.host || "localhost"}`,
+    );
     const pathname = decodeURIComponent(url.pathname);
     const requestedPath = pathname === "/" ? "/index.html" : pathname;
     const filePath = resolve(outDir, `.${requestedPath}`);
@@ -205,7 +215,9 @@ const createStaticServer = (outDir: string, https?: ReturnType<typeof getHttpsOp
 
     try {
       const fileStat = await stat(filePath);
-      const finalPath = fileStat.isDirectory() ? resolve(filePath, "index.html") : filePath;
+      const finalPath = fileStat.isDirectory()
+        ? resolve(filePath, "index.html")
+        : filePath;
       res.setHeader("Content-Type", getContentType(finalPath));
       createReadStream(finalPath).pipe(res);
     } catch {
@@ -248,7 +260,9 @@ export const presentPresentation = async (options: ServerOptions = {}) => {
   server.listen(config.present.port, config.present.host, () => {
     console.log(`Presi presentation serving ${outDir}`);
     console.log(`Local:   ${protocol}://localhost:${config.present.port}/`);
-    console.log(`Network: ${protocol}://${config.present.host}:${config.present.port}/`);
+    console.log(
+      `Network: ${protocol}://${config.present.host}:${config.present.port}/`,
+    );
   });
 };
 
@@ -305,38 +319,23 @@ export const exportPresentation = async (options: ServerOptions = {}) => {
     });
     await page.evaluate(() => document.fonts?.ready.then(() => true));
 
-    const slides = await page.evaluate(() => {
-      const getExplicitStepIndex = (element: Element) => {
-        const index = element.getAttribute("data-step-index") || element.getAttribute("data-fragment-index");
-        if (index === null) return null;
-        const parsed = parseInt(index);
-        return Number.isNaN(parsed) ? null : parsed;
-      };
-
-      return Array.from(document.querySelectorAll("section")).map((slide) => {
-        const elements = Array.from(
-          slide.querySelectorAll(
-            ".fragment, [data-presi-step-id], [data-transition-in], [data-transition-out]",
-          ),
-        );
-        let maxStep = 0;
-        let nextImplicitIndex = 1;
-
-        elements.map((element) => {
-          const explicitIndex = getExplicitStepIndex(element);
-          const usesImplicitStep =
-            element.classList.contains("fragment") ||
-            element.hasAttribute("data-presi-step-id");
-          const stepIndex = explicitIndex ?? (usesImplicitStep ? nextImplicitIndex : 0);
-          if (usesImplicitStep) {
-            nextImplicitIndex = Math.max(nextImplicitIndex, stepIndex + 1);
+    await page.waitForFunction(() =>
+      Boolean(
+        (
+          window as typeof window & {
+            __PRESI_DECK__?: { slides: Array<{ stepCount: number }> };
           }
-          maxStep = Math.max(maxStep, stepIndex);
-        });
-
-        return { maxStep };
-      });
-    });
+        ).__PRESI_DECK__,
+      ),
+    );
+    const slides = await page.evaluate(
+      () =>
+        (
+          window as typeof window & {
+            __PRESI_DECK__?: { slides: Array<{ stepCount: number }> };
+          }
+        ).__PRESI_DECK__!.slides,
+    );
 
     const styles = await page.evaluate(() =>
       Array.from(document.styleSheets)
@@ -358,7 +357,7 @@ export const exportPresentation = async (options: ServerOptions = {}) => {
 
     const pages: string[] = [];
     for (const [slideIndex, slide] of slides.entries()) {
-      for (let stepIndex = 0; stepIndex <= slide.maxStep; stepIndex += 1) {
+      for (let stepIndex = 0; stepIndex < slide.stepCount; stepIndex += 1) {
         await page.evaluate(
           ({ nextSlideIndex, nextStepIndex }) => {
             window.location.hash = `#/${nextSlideIndex}/${nextStepIndex}`;
@@ -366,7 +365,8 @@ export const exportPresentation = async (options: ServerOptions = {}) => {
           { nextSlideIndex: slideIndex, nextStepIndex: stepIndex },
         );
         await page.waitForFunction(
-          ({ nextSlideIndex, nextStepIndex }) => window.location.hash === `#/${nextSlideIndex}/${nextStepIndex}`,
+          ({ nextSlideIndex, nextStepIndex }) =>
+            window.location.hash === `#/${nextSlideIndex}/${nextStepIndex}`,
           { nextSlideIndex: slideIndex, nextStepIndex: stepIndex },
           {},
         );
@@ -378,7 +378,8 @@ export const exportPresentation = async (options: ServerOptions = {}) => {
           if (!wrapper) return null;
           return wrapper.outerHTML;
         });
-        if (!snapshot) throw new Error("Presi wrapper not found while exporting.");
+        if (!snapshot)
+          throw new Error("Presi wrapper not found while exporting.");
         pages.push(snapshot);
       }
     }

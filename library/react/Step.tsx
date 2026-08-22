@@ -1,35 +1,43 @@
 import React from "react";
-import { registerPresiStep, unregisterPresiStep } from "presi-js/core";
+import { SlideContext } from "./context.ts";
+import type {
+  EffectRegistration,
+  PresiStepFunction,
+} from "./engine/deckStore.ts";
 
 export interface StepProps {
   stepIndex?: number;
-  run: () => void | (() => void);
+  run: PresiStepFunction;
 }
 
 const Step: React.FC<StepProps> = ({ stepIndex, run }) => {
-  const idRef = React.useRef<string>(null);
-
-  if (!idRef.current) {
-    idRef.current = `presi-step-${Math.random().toString(36).slice(2)}`;
+  const slide = React.useContext(SlideContext);
+  if (!slide) {
+    throw new Error("<Step> must be used inside a <Slide>.");
   }
 
-  registerPresiStep(idRef.current, run);
+  // The hidden span only anchors the step's document position for implicit
+  // step ordering.
+  const anchorRef = React.useRef<HTMLSpanElement>(null);
+  const runRef = React.useRef(run);
+  runRef.current = run;
 
-  React.useEffect(() => {
-    const id = idRef.current;
+  React.useLayoutEffect(() => {
+    const effect: EffectRegistration = {
+      anchor: anchorRef.current,
+      stepIndex,
+      run: () => runRef.current(),
+    };
+    slide.registration.effects.add(effect);
+    slide.store.invalidate();
 
     return () => {
-      id && unregisterPresiStep(id);
+      slide.registration.effects.delete(effect);
+      slide.store.invalidate();
     };
-  }, []);
+  }, [slide, stepIndex]);
 
-  return (
-    <span
-      data-presi-step-id={idRef.current}
-      data-step-index={stepIndex}
-      hidden
-    />
-  );
+  return <span ref={anchorRef} hidden />;
 };
 
 export default Step;

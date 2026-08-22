@@ -22,19 +22,9 @@ const rawPlugin = {
 
 const builds = [
   {
-    entryPoints: ["library/index.ts"],
-    outfile: "packages/presi-js/dist/index.js",
-    external: ["vite", "react", "react-dom"],
-  },
-  {
-    entryPoints: ["library/core/index.ts"],
-    outfile: "packages/presi-js/dist/core.js",
-    external: [],
-  },
-  {
     entryPoints: ["library/react/index.ts"],
     outfile: "packages/presi-js/dist/react.js",
-    external: ["presi-js/core", "react", "react-dom"],
+    external: ["react", "react-dom"],
   },
   {
     entryPoints: ["library/server/index.ts"],
@@ -60,147 +50,125 @@ const options = {
   plugins: [rawPlugin],
 };
 
+const reactTypes = `import type React from "react";
+
+export type TransitionName =
+  | "fade"
+  | "fade-up"
+  | "fade-left"
+  | "fade-right"
+  | "fade-down"
+  | "fade-grow"
+  | "fade-up-grow"
+  | "fade-left-grow"
+  | "fade-right-grow"
+  | "fade-down-grow"
+  | "pop";
+
+export declare const TRANSITIONS: Record<
+  TransitionName,
+  {
+    keyframes: readonly Readonly<Record<string, string | number>>[];
+    easing?: string;
+  }
+>;
+
+export interface PresiTransitionConfig {
+  duration?: number;
+  delay?: number;
+  inDelay?: number;
+  easing?: string;
+}
+
+export type PresiStepCleanup = void | (() => void);
+export type PresiStepFunction = () => PresiStepCleanup;
+
+export interface DeckConfig {
+  aspectRatio: \`${"${number}:${number}"}\`;
+  transition?: PresiTransitionConfig;
+  calculateFontSize?: () => number;
+}
+
+export interface WrapperProps {
+  children: React.ReactNode;
+  aspectRatio: \`${"${number}:${number}"}\`;
+  transition?: PresiTransitionConfig;
+  calculateFontSize?: () => number;
+}
+
+export interface SlideProps extends React.HTMLAttributes<HTMLElement> {
+  children: React.ReactNode;
+  id?: string;
+  background?: SlideBackground;
+  className?: string;
+  title?: string;
+  notes?: Array<string> | null;
+  transitionIn?: TransitionName;
+  transitionOut?: TransitionName;
+  onMount?: () => void;
+  onUnmount?: () => void;
+}
+
+export interface SlideBackground {
+  className?: string;
+  color?: React.CSSProperties["backgroundColor"];
+  image?: string;
+  style?: React.CSSProperties;
+}
+
+export interface FragmentConfig {
+  transitionIn?: TransitionName;
+  transitionOut?: TransitionName;
+  order?: number;
+  stepIndex?: number;
+}
+
+export interface FragmentOwnProps {
+  transitionIn?: TransitionName;
+  transitionOut?: TransitionName;
+  order?: number;
+  stepIndex?: number;
+}
+
+export type FragmentProps<T extends React.ElementType = "span"> =
+  FragmentOwnProps & { as?: T } & Omit<
+      React.ComponentPropsWithoutRef<T>,
+      "as" | keyof FragmentOwnProps
+    >;
+
+export interface StepProps {
+  stepIndex?: number;
+  run: PresiStepFunction;
+}
+
+export interface PresiSnapshot {
+  slideIndex: number;
+  stepIndex: number;
+  totalSlides: number;
+  totalSteps: number;
+  currentSlide: {
+    title: string;
+  };
+}
+
+export type PresiContextValue = PresiSnapshot;
+
+export declare const Wrapper: React.FC<WrapperProps>;
+export declare const Slide: React.FC<SlideProps>;
+export declare const Fragment: <T extends React.ElementType = "span">(
+  props: FragmentProps<T>,
+) => React.ReactElement;
+export declare const Step: React.FC<StepProps>;
+export declare const usePresi: () => PresiContextValue;
+`;
+
 const writeTypes = async () => {
   await Promise.all([
       mkdir("packages/presi-js/dist", { recursive: true }),
   ]);
 
   await Promise.all([
-    writeFile(
-      "packages/presi-js/dist/core.d.ts",
-      `export interface PresiConfig {
-  aspectRatio?: \`${"${number}:${number}"}\`;
-  calculateFontSize?: () => number;
-  transition?: PresiTransitionConfig;
-}
-
-export interface PresiTransitionConfig {
-  duration?: number;
-  delay?: number;
-  overlap?: number;
-  easing?: string;
-  attributes?: Partial<PresiTransitionAttributes>;
-}
-
-export interface PresiTransitionAttributes {
-  in: string;
-  out: string;
-  inOrder: string;
-  outOrder: string;
-}
-
-export interface PresiHashState {
-  slideIndex: number;
-  fragmentIndex: number;
-}
-
-export interface PresiEventsSlideChange {
-  prevSlide: HTMLElement;
-  prevSlideIndex: number;
-  slide: HTMLElement;
-  slideIndex: number;
-}
-
-export interface PresiEventsFragmentChange {
-  prevFragmentIndex: number;
-  fragmentIndex: number;
-}
-
-export interface PresiEventsStateChange {
-  currentState: PresiHashState;
-  nextState: PresiHashState;
-}
-
-export type PresiStepCleanup = void | (() => void);
-export type PresiStepFunction = () => PresiStepCleanup;
-
-export declare const PRESI_TRANSITION_CONFIG: {
-  readonly duration: 200;
-  readonly delay: 100;
-  readonly overlap: 0;
-  readonly easing: "cubic-bezier(.2, .85, .25, 1)";
-  readonly attributes: {
-    readonly in: "data-transition-in";
-    readonly out: "data-transition-out";
-    readonly inOrder: "data-transition-in-order";
-    readonly outOrder: "data-transition-out-order";
-  };
-  readonly transitions: {
-    readonly fade: { readonly x: "0"; readonly y: "0"; readonly scale: 1 };
-    readonly "fade-up": { readonly x: "0"; readonly y: "2rem"; readonly scale: 1 };
-    readonly "fade-left": { readonly x: "2rem"; readonly y: "0"; readonly scale: 1 };
-    readonly "fade-right": { readonly x: "-2rem"; readonly y: "0"; readonly scale: 1 };
-    readonly "fade-down": { readonly x: "0"; readonly y: "-2rem"; readonly scale: 1 };
-    readonly "fade-grow": { readonly x: "0"; readonly y: "0"; readonly scale: 0.5 };
-    readonly "fade-up-grow": { readonly x: "0"; readonly y: "2rem"; readonly scale: 0.5 };
-    readonly "fade-left-grow": { readonly x: "2rem"; readonly y: "0"; readonly scale: 0.5 };
-    readonly "fade-right-grow": { readonly x: "-2rem"; readonly y: "0"; readonly scale: 0.5 };
-    readonly "fade-down-grow": { readonly x: "0"; readonly y: "-2rem"; readonly scale: 0.5 };
-  };
-};
-
-export declare const registerPresiStep: (id: string, run: PresiStepFunction) => void;
-export declare const unregisterPresiStep: (id: string) => void;
-
-export declare class Presi {
-  aspect: \`${"${number}:${number}"}\`;
-
-  constructor(wrapper: HTMLElement, options: PresiConfig);
-  onSlideChange(cb: (data: PresiEventsSlideChange) => void): void;
-  onFragmentChange(cb: (data: PresiEventsFragmentChange) => void): void;
-  onStateChange(cb: (data: PresiEventsStateChange) => void): void;
-  cleanUp(): void;
-  getCurrentHashStateSave(): PresiHashState;
-  next(): Promise<void>;
-  prev(): Promise<void>;
-  nextState(prev: PresiHashState): PresiHashState | false;
-  backState(prev: PresiHashState): PresiHashState | false;
-  getCurrentSlide(): HTMLElement;
-}
-`,
-    ),
-    writeFile(
-      "packages/presi-js/dist/react.d.ts",
-      `import type React from "react";
-
-export interface WrapperProps {
-  children: React.ReactNode;
-  aspectRatio: \`${"${number}:${number}"}\`;
-  transition?: import("presi-js/core").PresiConfig["transition"];
-}
-
-export interface SlideProps extends React.HTMLAttributes<HTMLElement> {
-  children: React.ReactNode;
-  className?: string;
-  title?: string;
-  notes?: Array<string>;
-  onMount?: () => void;
-  onUnmount?: () => void;
-}
-
-export interface StepProps {
-  stepIndex?: number;
-  run: () => void | (() => void);
-}
-
-export interface PresiSlideProps {
-  title: string;
-}
-
-export interface PresiContextValue {
-  slideIndex: number;
-  stepIndex: number;
-  totalSlides: number;
-  totalSteps: number;
-  currentSlide: PresiSlideProps;
-}
-
-export declare const Wrapper: React.FC<WrapperProps>;
-export declare const Slide: React.FC<SlideProps>;
-export declare const Step: React.FC<StepProps>;
-export declare const usePresi: () => PresiContextValue;
-`,
-    ),
+    writeFile("packages/presi-js/dist/react.d.ts", reactTypes),
     writeFile(
       "packages/presi-js/dist/server.d.ts",
       `import type { InlineConfig } from "vite";
@@ -256,7 +224,12 @@ export declare const exportPresentation: (options?: { configFile?: string }) => 
     ),
     writeFile(
       "packages/presi-js/dist/index.d.ts",
-      `export * from "./core.js";
+      `export * from "./react.js";
+`,
+    ),
+    writeFile(
+      "packages/presi-js/dist/index.js",
+      `export * from "./react.js";
 `,
     ),
   ]);
@@ -278,7 +251,7 @@ const writePackageJson = async () => {
     `${JSON.stringify(
       {
         name: "presi-js",
-        version: "0.0.12",
+        version: "0.0.14",
         description: "A modern presentation framework",
         type: "module",
         author: "Nico Martin <mail@nico.dev>",
@@ -302,10 +275,6 @@ const writePackageJson = async () => {
             types: "./dist/index.d.ts",
             import: "./dist/index.js",
           },
-          "./core": {
-            types: "./dist/core.d.ts",
-            import: "./dist/core.js",
-          },
           "./react": {
             types: "./dist/react.d.ts",
             import: "./dist/react.js",
@@ -323,14 +292,6 @@ const writePackageJson = async () => {
         peerDependencies: {
           react: "^18.2.0",
           "react-dom": "^18.2.0",
-        },
-        peerDependenciesMeta: {
-          react: {
-            optional: true,
-          },
-          "react-dom": {
-            optional: true,
-          },
         },
       },
       null,

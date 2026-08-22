@@ -8,7 +8,7 @@
       "DOM",
       "DOM.Iterable"
     ],
-    "module": "nodenext",
+    "module": "esnext",
     "skipLibCheck": true,
     /* Bundler mode */
     "moduleResolution": "bundler",
@@ -27,9 +27,6 @@
       "presi-js/react": [
         "./library/react/index.ts",
       ],
-      "presi-js/core": [
-        "./library/core/index.ts",
-      ],
       "presi-js/server": [
         "./library/server/index.ts",
       ]
@@ -41,7 +38,6 @@
   },
   "include": [
     "library/react",
-    "library/core",
     "library/server",
     "slides"
   ],

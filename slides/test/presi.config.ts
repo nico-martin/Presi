@@ -26,7 +26,6 @@ export default defineConfig({
     plugins: [react()],
     resolve: {
       alias: {
-        "presi-js/core": resolve(repoRoot, "library/core/index.ts"),
         "presi-js/react": resolve(repoRoot, "library/react/index.ts"),
       },
     },

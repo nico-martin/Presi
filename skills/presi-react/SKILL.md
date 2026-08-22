@@ -10,10 +10,10 @@ Use this skill when working in a React presentation app that consumes Presi. Do 
 Use the public React subpath:
 
 ```tsx
-import { Wrapper, Slide, Step, usePresi } from "presi-js/react";
+import { Wrapper, Slide, Fragment, Step, usePresi } from "presi-js/react";
 ```
 
-Do not import from `@presi/react`, `presi-js/dist/*`, `library/*`, or `packages/*`.
+Do not import from `@presi/react`, `presi-js/core`, `presi-js/dist/*`, `library/*`, or `packages/*`.
 
 ## Entry File
 
@@ -33,13 +33,16 @@ const App = () => (
 );
 
 export default function render(mountElement: HTMLElement) {
-  ReactDOM.createRoot(mountElement).render(<App />);
+  const root = ReactDOM.createRoot(mountElement);
+  root.render(<App />);
+
+  return () => root.unmount();
 }
 ```
 
 ## Wrapper
 
-`Wrapper` owns the Presi runtime instance for the rendered presentation.
+`Wrapper` owns the Presi runtime for the rendered presentation.
 
 ```tsx
 <Wrapper aspectRatio="16:9">
@@ -47,7 +50,7 @@ export default function render(mountElement: HTMLElement) {
 </Wrapper>
 ```
 
-Everything that needs `usePresi` must render inside `Wrapper`.
+Everything that needs `usePresi` must render inside `Wrapper`. Non-slide children (overlays, progress indicators) are allowed anywhere inside it.
 
 ## Slide
 
@@ -68,23 +71,35 @@ Use a stable, unique, non-numeric `id` on each authored slide. Presi forwards it
 
 This route remains valid when slides are reordered. Existing zero-based numeric routes such as `/#/0/2` remain supported.
 
+## Backgrounds
+
+Use `background` when a slide has a color or image background that should remain visually separate from its content:
+
+```tsx
+<Slide background={{ color: "#15171c" }}>Dark slide</Slide>
+<Slide background={{ image: landscape, className: "bg-left" }}>
+  Image slide
+</Slide>
+<Slide background={{ style: { backgroundSize: "contain" } }}>
+  Custom background
+</Slide>
+```
+
+When the slide has `transitionIn` or `transitionOut`, Presi always fades this background and applies the selected transition to the content. Slides without `background` retain whole-slide transitions.
+
 Recommended theme wrapper:
 
 ```tsx
 import { Slide as PresiSlide } from "presi-js/react";
-import type { ReactNode } from "react";
+import type { ComponentProps, ReactNode } from "react";
 
-export default function Slide({
-  children,
-  title = "",
-  notes,
-}: {
+type ThemeSlideProps = Omit<ComponentProps<typeof PresiSlide>, "children"> & {
   children: ReactNode;
-  title?: string;
-  notes?: string[];
-}) {
+};
+
+export default function Slide({ children, title = "", ...props }: ThemeSlideProps) {
   return (
-    <PresiSlide className="space-y-6 p-10" title={title} notes={notes}>
+    <PresiSlide className="space-y-6 p-10" title={title} {...props}>
       {Boolean(title) && <h1 className="font-heading text-5xl">{title}</h1>}
       {children}
     </PresiSlide>
@@ -94,56 +109,71 @@ export default function Slide({
 
 ## Fragments
 
-Fragments are normal elements with the `fragment` class.
+Fragments are typed components that render a normal DOM element chosen with `as` (default `span`). All native props of that element are typed and forwarded.
 
 ```tsx
-<p className="fragment" data-step-index="1">
-  Appears on step 1
-</p>
+<Fragment as="p" transitionIn="fade-up">
+  Appears on the next implicit step
+</Fragment>
+<Fragment as="a" href="https://example.com" transitionIn="pop" stepIndex={2}>
+  Appears on step 2
+</Fragment>
 ```
+
+Step semantics:
+
+- `stepIndex` omitted: the fragment takes the next implicit step (hidden until its step).
+- `stepIndex={0}`: visible from slide start; `transitionIn` animates it together with the slide entrance.
+- `transitionOut` without `transitionIn`: an out element — visible from slide start, hidden once its `stepIndex` is reached (or, without a `stepIndex`, it stays visible and only animates out when leaving the slide).
+- An explicit `stepIndex` bumps the implicit counter: after `stepIndex={5}`, the next implicit fragment is step 6.
+
+Fragments remain in document flow before they appear. Presi uses `opacity: 0`, not `display: none`, so revealing one does not change the layout. Do not add Tailwind's `hidden` utility to a fragment unless removing it from layout is intentional.
 
 Multiple fragments can share a step:
 
 ```tsx
-<p className="fragment" data-step-index="2">A</p>
-<p className="fragment" data-step-index="2">B</p>
+<Fragment as="p" stepIndex={2}>A</Fragment>
+<Fragment as="p" stepIndex={2}>B</Fragment>
+```
+
+To reveal a custom component as one fragment, wrap it in a `Fragment` (the default `span` works; use `as="div"` for block content):
+
+```tsx
+<Fragment as="div" transitionIn="fade-up" stepIndex={1}>
+  <MyChart />
+</Fragment>
 ```
 
 ## Transitions
 
-Transitions are opt-in. Add `data-transition-in` or `data-transition-out` to slides or step elements.
+Transitions are opt-in, typed props on `Slide` and `Fragment`: `transitionIn` and `transitionOut`.
 
 ```tsx
-<Slide title="Intro" data-transition-out="fade-left">
-  <p className="fragment" data-step-index="1" data-transition-in="fade-up">
+<Slide title="Intro" transitionOut="fade-left">
+  <Fragment as="p" stepIndex={1} transitionIn="fade-up">
     First point
-  </p>
-  <p
-    className="fragment"
-    data-step-index="1"
-    data-transition-in="fade-up"
-    data-transition-in-order="2"
-  >
+  </Fragment>
+  <Fragment as="p" stepIndex={1} transitionIn="fade-up" order={2}>
     Second point
-  </p>
+  </Fragment>
 </Slide>
 ```
 
-Supported values are `fade`, `fade-up`, `fade-left`, `fade-right`, `fade-down`, `fade-grow`, `fade-up-grow`, `fade-left-grow`, `fade-right-grow`, `fade-down-grow`, and `pop`.
+`TransitionName` values are `fade`, `fade-up`, `fade-left`, `fade-right`, `fade-down`, `fade-grow`, `fade-up-grow`, `fade-left-grow`, `fade-right-grow`, `fade-down-grow`, and `pop`. Invalid names are TypeScript errors.
 
-Use `data-transition-in-order` or `data-transition-out-order` to override the default DOM-order stagger.
+Use `order` to override the default DOM-order stagger within a step.
 
-Customize timing or attribute names on `Wrapper` with `transition={{ duration, delay, overlap, easing, attributes }}`.
+Customize timing on `Wrapper` with `transition={{ duration, delay, inDelay, easing }}`.
 
-Use `overlap` to start the incoming transition before the outgoing transition finishes:
+Navigation is instant: advancing always updates the URL state immediately, and navigating faster than the transitions simply cuts them short — the deck never lags behind the URL. Holding a navigation key fast-forwards through the deck.
+
+Use `inDelay` to stage the animations: in-transitions start `inDelay` milliseconds after the out-transitions begin, while incoming elements are held invisible. With `duration: 800` and `inDelay: 400`, the old slide is half flown out when the next one starts flying in. The default is `0` (in and out run together). The outgoing slide stays visible underneath the incoming slide until its out-transition finishes.
 
 ```tsx
-<Wrapper aspectRatio="16:9" transition={{ duration: 600, overlap: 200 }}>
+<Wrapper aspectRatio="16:9" transition={{ duration: 800, inDelay: 400 }}>
   {slides}
 </Wrapper>
 ```
-
-`overlap` is measured in milliseconds and defaults to `0`. In this example, both transitions run together for the final `200ms` of the outgoing transition. The outgoing slide stays visible underneath the incoming slide until its transition completes. Stagger delays count toward the outgoing sequence duration.
 
 ## Agent Visual Check
 
@@ -177,7 +207,7 @@ The callback may return cleanup:
 />
 ```
 
-Cleanup runs when the step is no longer active or when the presentation unmounts.
+Cleanup runs when the step is no longer active or when the presentation unmounts. Omitting `stepIndex` assigns the next implicit step, based on the component's position in the slide.
 
 ## Slide Lifecycle Effects
 
@@ -212,7 +242,7 @@ const { slideIndex, stepIndex, totalSlides, totalSteps, currentSlide } =
   usePresi();
 ```
 
-Indexes are zero-based.
+Indexes are zero-based. Only components calling `usePresi` re-render on navigation; slides themselves do not.
 
 ## Notes
 
@@ -224,4 +254,4 @@ Use the `notes` prop:
 </Slide>
 ```
 
-Notes render in dev by default and are omitted from production builds by default.
+Notes render in the speaker view (press `S`) in dev by default and are omitted from production builds by default.

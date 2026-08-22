@@ -1,22 +1,22 @@
 ---
 name: presi-core
-description: Use when working with a Presi presentation at the framework-agnostic level: project setup, presi.config.ts, CLI commands, routing, steps, fragments, notes, and build behavior.
+description: Use when working with a Presi presentation at the project level: setup, presi.config.ts, CLI commands, routing, static rendering, notes builds, and export.
 ---
 
 # Presi Core
 
-Use this skill when working with a project that consumes Presi. Do not use it for modifying Presi's own library source.
+Use this skill when working with a project that consumes Presi. Do not use it for modifying Presi's own library source. For authoring slides, fragments, and transitions, use the `presi-react` skill — Presi is React-first, and slides are React components.
 
-Presi is distributed as one npm package named `presi`.
+Presi is distributed as one npm package named `presi-js`.
 
 Public imports:
 
 ```ts
-import { Presi } from "presi-js/core";
+import { Wrapper, Slide, Fragment } from "presi-js/react";
 import { defineConfig } from "presi-js/server";
 ```
 
-Do not import from `@presi/*`, `library/*`, or `packages/*` in a consumer app.
+Do not import from `@presi/*`, `presi-js/core`, `library/*`, or `packages/*` in a consumer app.
 
 ## Creating A Presentation
 
@@ -73,7 +73,6 @@ Important rules:
 
 - Use `resolveMountElement`; do not add a `mountId` option.
 - Pass framework integration through `vite.plugins`.
-- Keep the server framework agnostic. React, Vue, Svelte, or vanilla apps should all fit the same render-entry model.
 
 If the app provides `index.html`, its mount element must match `resolveMountElement`:
 
@@ -89,11 +88,14 @@ If no `index.html` exists, Presi generates a default shell with:
 
 ## Presentation Entry Contract
 
-The browser entry should default-export a render function:
+The browser entry should default-export a render function that mounts the React deck and returns a cleanup function:
 
-```ts
+```tsx
 export default function render(mountElement: HTMLElement) {
-  // Mount your framework/app here.
+  const root = ReactDOM.createRoot(mountElement);
+  root.render(<App />);
+
+  return () => root.unmount();
 }
 ```
 
@@ -108,15 +110,11 @@ Presi uses hash routes:
 
 Indexes are zero-based. Step `0` is the initial slide state.
 
-Give slides stable DOM IDs when they need to be opened directly without knowing their deck position:
-
-```html
-<section id="architecture">...</section>
-```
-
-That slide can then be opened at step `2` with `/#/architecture/2`. Named routes continue to target the same slide when the deck is reordered. Slide IDs are optional, but IDs used for routing must be unique and must not contain only digits. Numeric routes remain supported for slides without IDs and for backward compatibility.
+Give slides stable `id` props when they need to be opened directly without knowing their deck position. That slide can then be opened at step `2` with `/#/architecture/2`. Named routes continue to target the same slide when the deck is reordered. Slide IDs are optional, but IDs used for routing must be unique and must not contain only digits. Numeric routes remain supported for slides without IDs and for backward compatibility, and an in-range numeric route is kept as-is rather than rewritten to the slide's ID.
 
 Navigation serializes the destination slide's ID when it has one. Invalid slide or step indexes are clamped to a valid state, while an unknown slide ID returns to the first slide.
+
+Keyboard shortcuts are `ArrowRight` or `Space` for next, `ArrowLeft` for previous, `F` for fullscreen, and `S` for speaker view. Holding a navigation key fast-forwards through the deck. Presi ignores these shortcuts while focus is in an `input`, `textarea`, `select`, or contenteditable element. The speaker view applies the same guard before forwarding navigation keys.
 
 ## Static Rendering
 
@@ -127,32 +125,6 @@ Add the `presi-static` query parameter to disable Presi transitions and CSS anim
 ```
 
 The query string comes before the hash. Fragments and JavaScript steps still resolve to the requested state. Use this mode for deterministic screenshots and visual inspection; use the normal URL when checking transition behavior.
-
-## Steps And Fragments
-
-A slide timeline is made of steps. A step can contain fragments, JavaScript effects, or both.
-
-Fragments are DOM elements with the `fragment` class:
-
-```html
-<p class="fragment" data-step-index="1">Appears at step 1</p>
-```
-
-Use `data-step-index` for explicit positioning. Avoid `data-fragment-index` in new code; it only exists as a legacy alias.
-
-## Transitions
-
-Slides and step elements have no transition by default. Add `data-transition-in` or `data-transition-out` to opt in.
-
-Supported values are `fade`, `fade-up`, `fade-left`, `fade-right`, `fade-down`, `fade-grow`, `fade-up-grow`, `fade-left-grow`, `fade-right-grow`, `fade-down-grow`, and `pop`.
-
-Transitions use configured timing by default. `pop` runs for `400ms` with `cubic-bezier(.34, 1.45, .5, 1)`. Multiple elements in one step are staggered in DOM order. Use `data-transition-in-order` or `data-transition-out-order` to override sequencing.
-
-The constants and attribute names are exported as `PRESI_TRANSITION_CONFIG` from `presi-js/core`.
-
-Override timing and attribute names when creating `Presi` with `transition: { duration, delay, overlap, easing, attributes }`.
-
-`overlap` is measured in milliseconds and defaults to `0`. It controls how long outgoing and incoming transitions run concurrently. For example, `transition: { duration: 600, overlap: 200 }` starts the incoming transition `400ms` after the outgoing transition starts. The outgoing slide remains visible underneath until its transition finishes. Stagger delays are included in the outgoing sequence duration.
 
 ## Notes
 
@@ -187,4 +159,8 @@ If debugging directly:
 ```sh
 pnpm exec presi-js dev
 pnpm exec presi-js build
+pnpm exec presi-js present
+pnpm exec presi-js export
 ```
+
+`present` builds and serves the static deck. `export` builds with transitions disabled and renders every slide step to a PDF (one page per step) at `export.file`.

@@ -1,5 +1,11 @@
 import React from "react";
-import { registerPresiStep, unregisterPresiStep } from "presi-js/core";
+import { DeckContext, SlideContext, type SlideHandle } from "./context.ts";
+import type {
+  EffectRegistration,
+  SlideRegistration,
+} from "./engine/deckStore.ts";
+import { styles } from "./engine/styles.ts";
+import type { TransitionName } from "./engine/transitions.ts";
 
 declare const PRESI_INCLUDE_NOTES: string | undefined;
 
@@ -8,74 +14,138 @@ const includeNotes = () =>
 
 export interface SlideProps extends React.HTMLAttributes<HTMLElement> {
   children: React.ReactNode;
+  id?: string;
+  background?: SlideBackground;
   className?: string;
   title?: string;
-  notes?: Array<string>;
+  notes?: Array<string> | null;
+  transitionIn?: TransitionName;
+  transitionOut?: TransitionName;
   onMount?: () => void;
   onUnmount?: () => void;
 }
 
+export interface SlideBackground {
+  className?: string;
+  color?: React.CSSProperties["backgroundColor"];
+  image?: string;
+  style?: React.CSSProperties;
+}
+
 const Slide: React.FC<SlideProps> = ({
   children,
+  id,
+  background,
   className,
   title = "",
   notes = null,
+  transitionIn,
+  transitionOut,
   onMount,
   onUnmount,
   style,
   ...props
 }) => {
-  const mountStepIdRef = React.useRef<string>(null);
+  const store = React.useContext(DeckContext);
+  if (!store) {
+    throw new Error("<Slide> must be used inside a <Wrapper>.");
+  }
+
+  const sectionRef = React.useRef<HTMLElement>(null);
+  const [registration] = React.useState<SlideRegistration>(() => ({
+    element: null,
+    title: "",
+    notes: [],
+    fragments: new Set(),
+    effects: new Set(),
+  }));
+  const [handle] = React.useState<SlideHandle>(() => ({ registration, store }));
+
   const onMountRef = React.useRef(onMount);
   const onUnmountRef = React.useRef(onUnmount);
   onMountRef.current = onMount;
   onUnmountRef.current = onUnmount;
 
-  if (!mountStepIdRef.current) {
-    mountStepIdRef.current = `presi-slide-mount-${Math.random().toString(36).slice(2)}`;
-  }
+  React.useLayoutEffect(() => {
+    const nextNotes = includeNotes() && notes ? notes : [];
+    const changed =
+      registration.id !== id ||
+      registration.title !== title ||
+      registration.transitionIn !== transitionIn ||
+      registration.transitionOut !== transitionOut ||
+      JSON.stringify(registration.notes) !== JSON.stringify(nextNotes);
+    registration.id = id;
+    registration.title = title;
+    registration.notes = nextNotes;
+    registration.transitionIn = transitionIn;
+    registration.transitionOut = transitionOut;
+    changed && store.invalidate();
+  });
 
   const hasMountEffect = Boolean(onMount || onUnmount);
+  React.useLayoutEffect(() => {
+    if (!hasMountEffect) return;
 
-  if (hasMountEffect) {
-    registerPresiStep(mountStepIdRef.current, () => {
-      onMountRef.current?.();
+    const effect: EffectRegistration = {
+      anchor: null,
+      stepIndex: 0,
+      run: () => {
+        onMountRef.current?.();
 
-      return () => {
-        onUnmountRef.current?.();
-      };
-    });
-  }
-
-  React.useEffect(() => {
-    const id = mountStepIdRef.current;
+        return () => {
+          onUnmountRef.current?.();
+        };
+      },
+    };
+    registration.effects.add(effect);
+    store.invalidate();
 
     return () => {
-      id && unregisterPresiStep(id);
+      registration.effects.delete(effect);
+      store.invalidate();
     };
+  }, [hasMountEffect]);
+
+  React.useLayoutEffect(() => {
+    registration.element = sectionRef.current;
+    return store.registerSlide(registration);
   }, []);
 
   return (
-    <section
-      className={className}
-      data-title={title}
-      style={{
-        ...style,
-      }}
-      {...props}
-    >
-      {hasMountEffect && (
-        <span data-presi-step-id={mountStepIdRef.current} data-step-index={0} hidden />
-      )}
-      {children}
-      {includeNotes() && notes && (
-        <aside>
-          {notes.map((note, i) => (
-            <p key={i}>{note}</p>
-          ))}
-        </aside>
-      )}
-    </section>
+    <SlideContext.Provider value={handle}>
+      <section
+        ref={sectionRef}
+        id={id}
+        className={
+          background || !className
+            ? styles.slide
+            : `${styles.slide} ${className}`
+        }
+        style={background ? undefined : style}
+        {...props}
+      >
+        {background ? (
+          <>
+            <div
+              data-presi-slide-background
+              className={background.className}
+              style={{
+                backgroundColor: background.color,
+                backgroundImage: background.image
+                  ? `url("${background.image}")`
+                  : undefined,
+                ...background.style,
+              }}
+            />
+            <div data-presi-slide-content className={className} style={style}>
+              {children}
+            </div>
+          </>
+        ) : (
+          children
+        )}
+      </section>
+    </SlideContext.Provider>
   );
 };
 

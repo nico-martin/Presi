@@ -18,8 +18,8 @@ const files = {
     "react-dom": "^18.2.0"
   },
   "devDependencies": {
-    "@types/react": "^19.2.17",
-    "@types/react-dom": "^19.2.3",
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
     "autoprefixer": "^10.4.16",
     "postcss": "^8.4.31",
     "tailwindcss": "^3.4.17",
@@ -61,7 +61,7 @@ export default {
 `,
   "Slides.tsx": () => `import React from "react";
 import ReactDOM from "react-dom/client";
-import { Wrapper } from "presi-js/react";
+import { Fragment, Wrapper } from "presi-js/react";
 import Slide from "./theme/Slide";
 import "./style.css";
 
@@ -69,7 +69,7 @@ const App: React.FC = () => (
   <Wrapper aspectRatio="16:9">
     <Slide title="Hello Presi">
       <p>Start editing <code>Slides.tsx</code>.</p>
-      <p className="fragment" data-step-index="1">This is your first fragment.</p>
+      <Fragment as="p" transitionIn="fade-up">This is your first fragment.</Fragment>
     </Slide>
   </Wrapper>
 );

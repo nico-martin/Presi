@@ -1,3 +1,4 @@
+import { Fragment } from "presi-js/react";
 import Slide from "../theme/Slide.tsx";
 
 export default function FragmentsSlide() {
@@ -7,18 +8,20 @@ export default function FragmentsSlide() {
       title="Fragments and Transitions"
       notes={["Each card is revealed by advancing one step."]}
       className="bg-white"
-      data-transition-in="fade-left"
-      data-transition-out="fade-left"
+      transitionIn="fade-left"
+      transitionOut="fade-left"
     >
       <p className="max-w-3xl text-sm text-slate-600">
-        Add <code className="rounded bg-slate-100 px-2 py-1">fragment</code>
-        elements and assign step indexes to reveal content at the right moment.
+        Add <code className="rounded bg-slate-100 px-2 py-1">Fragment</code>
+        components and assign step indexes to reveal content at the right
+        moment.
       </p>
       <div className="grid grid-cols-3 gap-5">
-        <div
-          className="fragment rounded-3xl bg-emerald-100 p-6 text-emerald-950 shadow-sm"
-          data-step-index="1"
-          data-transition-in="fade-up-grow"
+        <Fragment
+          as="div"
+          className="rounded-3xl bg-emerald-100 p-6 text-emerald-950 shadow-sm"
+          stepIndex={1}
+          transitionIn="fade-up-grow"
         >
           <p className="text-xs font-bold uppercase tracking-wide text-emerald-700">
             Step 1
@@ -27,22 +30,24 @@ export default function FragmentsSlide() {
           <p className="mt-3 text-sm">
             Fragments stay hidden until their step.
           </p>
-        </div>
-        <div
-          className="fragment rounded-3xl bg-cyan-100 p-6 text-cyan-950 shadow-sm"
-          data-step-index="2"
-          data-transition-in="fade-left-grow"
+        </Fragment>
+        <Fragment
+          as="div"
+          className="rounded-3xl bg-cyan-100 p-6 text-cyan-950 shadow-sm"
+          stepIndex={2}
+          transitionIn="fade-left-grow"
         >
           <p className="text-xs font-bold uppercase tracking-wide text-cyan-700">
             Step 2
           </p>
           <p className="mt-4 text-xl font-black">Choose motion</p>
-          <p className="mt-3 text-sm">Transitions are declared in the DOM.</p>
-        </div>
-        <div
-          className="fragment rounded-3xl bg-violet-100 p-6 text-violet-950 shadow-sm"
-          data-step-index="3"
-          data-transition-in="pop"
+          <p className="mt-3 text-sm">Transitions are typed props.</p>
+        </Fragment>
+        <Fragment
+          as="div"
+          className="rounded-3xl bg-violet-100 p-6 text-violet-950 shadow-sm"
+          stepIndex={3}
+          transitionIn="pop"
         >
           <p className="text-xs font-bold uppercase tracking-wide text-violet-700">
             Step 3
@@ -51,7 +56,7 @@ export default function FragmentsSlide() {
           <p className="mt-3 text-sm">
             Plain Tailwind classes work as expected.
           </p>
-        </div>
+        </Fragment>
       </div>
     </Slide>
   );

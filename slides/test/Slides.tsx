@@ -22,7 +22,7 @@ function Bkg() {
 }
 
 const App: React.FC = () => (
-  <Wrapper aspectRatio="16:9" transition={{ overlap: 300 }}>
+  <Wrapper aspectRatio="16:9" transition={{ duration: 800, inDelay: 200 }}>
     <FeatureTourSlide />
     <FragmentsSlide />
     <StepControlSlide />
