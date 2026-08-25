@@ -25,7 +25,6 @@ export interface PresiConfig {
   build: {
     outDir: string;
     distFolder?: string;
-    includeNotes: boolean;
   };
 }
 
@@ -67,7 +66,6 @@ const defineConfig = (config: PresiUserConfig = {}): PresiConfig => ({
   build: {
     outDir: config.build?.outDir || "dist",
     distFolder: config.build?.distFolder,
-    includeNotes: config.build?.includeNotes ?? false,
   },
 });
 

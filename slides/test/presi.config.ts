@@ -43,6 +43,5 @@ export default defineConfig({
   build: {
     outDir: "dist",
     distFolder: "test",
-    includeNotes: false,
   },
 });

@@ -199,7 +199,6 @@ export interface PresiConfig {
   build: {
     outDir: string;
     distFolder?: string;
-    includeNotes: boolean;
   };
 }
 

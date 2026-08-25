@@ -137,7 +137,7 @@ const createViteConfig = (
     command === "dev"
       ? config.dev.includeNotes
       : command === "build"
-      ? config.build.includeNotes
+      ? false
       : true;
   const outDir = getBuildOutDir(config);
   const https = getHttpsOptions(config);
@@ -146,6 +146,7 @@ const createViteConfig = (
     root: config.root,
     define: {
       PRESI_INCLUDE_NOTES: JSON.stringify(String(includeNotes)),
+      PRESI_USE_SLIDE_IDS: JSON.stringify(String(command === "dev")),
       "globalThis.PRESI_DISABLE_TRANSITIONS": JSON.stringify(
         command === "export",
       ),

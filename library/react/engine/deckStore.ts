@@ -23,6 +23,14 @@ import {
   type TransitionTarget,
 } from "./transitions.ts";
 
+declare const PRESI_INCLUDE_NOTES: string | undefined;
+declare const PRESI_USE_SLIDE_IDS: string | undefined;
+
+const includeNotes =
+  typeof PRESI_INCLUDE_NOTES === "undefined" || PRESI_INCLUDE_NOTES !== "false";
+const useSlideIds =
+  typeof PRESI_USE_SLIDE_IDS === "undefined" || PRESI_USE_SLIDE_IDS !== "false";
+
 export type PresiStepCleanup = void | (() => void);
 export type PresiStepFunction = () => PresiStepCleanup;
 
@@ -182,7 +190,7 @@ export class DeckStore {
     addEventListener("resize", this.resize);
     this.resize();
 
-    this.notes = new NotesPlugin(this);
+    if (includeNotes) this.notes = new NotesPlugin(this);
     this.flush();
   };
 
@@ -350,7 +358,7 @@ export class DeckStore {
 
   private slideInfos = (): HashSlideInfo[] =>
     this.slides.map(({ registration, timeline }) => ({
-      id: registration.id,
+      id: useSlideIds ? registration.id : undefined,
       stepCount: timeline.length,
     }));
 
