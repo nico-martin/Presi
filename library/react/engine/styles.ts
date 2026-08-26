@@ -25,6 +25,7 @@ export const injectBaseStyles = () => {
   background-color: white;
   min-height: 0;
   overflow: hidden;
+  touch-action: pan-y pinch-zoom;
   transform: translate(-50%, -50%);
   width: 100vw;
 }

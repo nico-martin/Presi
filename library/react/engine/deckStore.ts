@@ -116,6 +116,8 @@ const compareDocumentOrder = (
 // passed. Independent of OS key-repeat settings.
 const HOLD_REPEAT_DELAY = 400;
 const HOLD_REPEAT_INTERVAL = 100;
+const MIN_SWIPE_DISTANCE = 40;
+const SWIPE_DISTANCE_RATIO = 0.08;
 
 const isNavigationKey = (code: string): boolean =>
   code === "ArrowRight" || code === "Space" || code === "ArrowLeft";
@@ -188,6 +190,9 @@ export class DeckStore {
     addEventListener("keyup", this.keyup);
     addEventListener("blur", this.onBlur);
     addEventListener("resize", this.resize);
+    wrapper.addEventListener("pointerdown", this.pointerdown);
+    addEventListener("pointerup", this.pointerup);
+    addEventListener("pointercancel", this.pointercancel);
     this.resize();
 
     if (includeNotes) this.notes = new NotesPlugin(this);
@@ -202,6 +207,10 @@ export class DeckStore {
     removeEventListener("keyup", this.keyup);
     removeEventListener("blur", this.onBlur);
     removeEventListener("resize", this.resize);
+    this.wrapper?.removeEventListener("pointerdown", this.pointerdown);
+    removeEventListener("pointerup", this.pointerup);
+    removeEventListener("pointercancel", this.pointercancel);
+    this.swipeStart = null;
     this.cleanInactiveEffects(new Set());
     this.notes?.destroy();
     this.notes = null;
@@ -593,7 +602,48 @@ export class DeckStore {
     this.holdInterval = null;
   };
 
-  private onBlur = () => this.stopHold();
+  private onBlur = () => {
+    this.stopHold();
+    this.swipeStart = null;
+  };
+
+  private swipeStart: {
+    pointerId: number;
+    x: number;
+    y: number;
+  } | null = null;
+
+  private pointerdown = (event: PointerEvent) => {
+    if (event.pointerType !== "touch" || !event.isPrimary) return;
+    this.swipeStart = {
+      pointerId: event.pointerId,
+      x: event.clientX,
+      y: event.clientY,
+    };
+  };
+
+  private pointerup = (event: PointerEvent) => {
+    const start = this.swipeStart;
+    if (!start || event.pointerId !== start.pointerId) return;
+    this.swipeStart = null;
+
+    const deltaX = event.clientX - start.x;
+    const deltaY = event.clientY - start.y;
+    const threshold = Math.max(
+      MIN_SWIPE_DISTANCE,
+      (this.wrapper?.clientWidth || 0) * SWIPE_DISTANCE_RATIO,
+    );
+    if (Math.abs(deltaX) < threshold || Math.abs(deltaX) <= Math.abs(deltaY)) {
+      return;
+    }
+
+    event.preventDefault();
+    deltaX < 0 ? this.next() : this.prev();
+  };
+
+  private pointercancel = (event: PointerEvent) => {
+    if (event.pointerId === this.swipeStart?.pointerId) this.swipeStart = null;
+  };
 
   private resize = () => {
     const calculateFontSize =
