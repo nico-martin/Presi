@@ -219,7 +219,12 @@ export declare const defineConfig: (config?: PresiUserConfig) => PresiConfig;
 export declare const devPresentation: (options?: { configFile?: string }) => Promise<void>;
 export declare const buildPresentation: (options?: { configFile?: string }) => Promise<void>;
 export declare const presentPresentation: (options?: { configFile?: string }) => Promise<void>;
-export declare const exportPresentation: (options?: { configFile?: string }) => Promise<void>;
+export type ExportMode = "pdf" | "transcript" | "notes";
+export interface ExportPresentationOptions {
+  configFile?: string;
+  mode?: ExportMode;
+}
+export declare const exportPresentation: (options?: ExportPresentationOptions) => Promise<void>;
 `,
     ),
     writeFile(

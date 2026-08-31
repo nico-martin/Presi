@@ -30,6 +30,30 @@ const includeNotes =
   typeof PRESI_INCLUDE_NOTES === "undefined" || PRESI_INCLUDE_NOTES !== "false";
 const useSlideIds =
   typeof PRESI_USE_SLIDE_IDS === "undefined" || PRESI_USE_SLIDE_IDS !== "false";
+const notesStepCue = ">>>";
+const notesDemoBlockCue = /^\[DEMO(?:\s+([^\]]+))?\]$/;
+const inlineNotesStepCue =
+  '<span class="presi-notes-step-cue presi-notes-step-cue--inline">NEXT</span>';
+
+const renderNoteMarkdown = (note: string): string =>
+  note.replace(
+    /~~([^~\n]+)~~|\*\*([^*\n]+)\*\*|\*([^*\n]+)\*/g,
+    (_, deleted: string, strong: string, emphasized: string) =>
+      deleted
+        ? `<del>${deleted}</del>`
+        : strong
+        ? `<strong>${strong}</strong>`
+        : `<em>${emphasized}</em>`,
+  );
+
+const renderDemoCue = (instruction: string | undefined): string =>
+  `<div class="presi-notes-demo-cue"><span class="presi-notes-demo-cue__label">DEMO</span>${
+    instruction
+      ? `<span class="presi-notes-demo-cue__description">${renderNoteMarkdown(
+          instruction.trim(),
+        )}</span>`
+      : ""
+  }</div>`;
 
 export type PresiStepCleanup = void | (() => void);
 export type PresiStepFunction = () => PresiStepCleanup;
@@ -281,15 +305,27 @@ export class DeckStore {
       window as typeof window & {
         __PRESI_DECK__?: {
           aspectRatio: `${number}:${number}`;
-          slides: Array<{ id?: string; title: string; stepCount: number }>;
+          slides: Array<{
+            id?: string;
+            title: string;
+            stepCount: number;
+            notes?: string[];
+            notesHtml?: string;
+          }>;
         };
       }
     ).__PRESI_DECK__ = {
       aspectRatio: this.config.aspectRatio,
-      slides: this.slides.map(({ registration, timeline }) => ({
+      slides: this.slides.map(({ registration, timeline }, slideIndex) => ({
         id: registration.id,
         title: registration.title,
         stepCount: timeline.length,
+        ...(this.snapshot.isExporting
+          ? {
+              notes: [...registration.notes],
+              notesHtml: this.getNotesHtml(slideIndex),
+            }
+          : {}),
       })),
     };
 
@@ -386,7 +422,18 @@ export class DeckStore {
 
   public getNotesHtml = (slideIndex: number): string =>
     (this.slides[slideIndex]?.registration.notes || [])
-      .map((note) => `<p>${note}</p>`)
+      .map((note) => {
+        const trimmedNote = note.trim();
+        const demoBlock = trimmedNote.match(notesDemoBlockCue);
+
+        return trimmedNote === notesStepCue
+          ? '<div class="presi-notes-step-cue presi-notes-step-cue--block"><span>NEXT</span></div>'
+          : demoBlock
+          ? renderDemoCue(demoBlock[1])
+          : `<p>${renderNoteMarkdown(note)
+              .split(notesStepCue)
+              .join(inlineNotesStepCue)}</p>`;
+      })
       .join("");
 
   public subscribe = (listener: () => void): (() => void) => {

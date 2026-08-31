@@ -251,8 +251,8 @@ Current shape:
 }
 ```
 
-`isExporting` is `true` only while Presi is rendering the PDF export. Use it
-to replace interactive content with an informative static preview. It remains
+`isExporting` is `true` while Presi is rendering any export mode. Use it to
+replace interactive content with an informative static preview. It remains
 `false` in the web presentation, including `presi-static` screenshot mode.
 
 ### `presi-js/server`
@@ -265,8 +265,21 @@ Supported commands:
 - `presi-js build`
 - `presi-js present`
 - `presi-js export`
+- `presi-js export --mode=transcript`
+- `presi-js export --mode=notes`
 
-`export` builds the deck with transitions disabled, reads the deck's slide/step map from the running page (`window.__PRESI_DECK__`), renders every step at its hash URL with Playwright Chromium, and writes a PDF with one page per step.
+Export modes:
+
+- `pdf` is the default and preserves the existing output: one PDF page per
+  slide step.
+- `transcript` writes an A4 PDF with one page per slide. Each page contains the
+  slide's final step followed by its notes.
+- `notes` writes a Markdown document containing every slide's notes under a
+  level-two heading.
+
+With `export.file: "deck.pdf"`, the outputs are `deck.pdf`,
+`deck.transcript.pdf`, and `deck.notes.md`. The export build includes notes and
+disables transitions in all modes.
 
 ## Presi Server Config
 
@@ -305,7 +318,7 @@ Config fields:
 - `dev.host`: dev server host.
 - `dev.includeNotes`: whether notes are available in dev.
 - `present.port` / `present.host`: static presentation server.
-- `export.file`: PDF output path.
+- `export.file`: default PDF output path and filename stem for alternate modes.
 - `build.outDir`: production output directory.
 - `build.includeNotes`: whether notes are available in production.
 
@@ -368,6 +381,24 @@ Notes are passed as data and shown in the speaker view (press `S`); they are not
   Hello
 </Slide>
 ```
+
+Use `>>>` to mark when to advance to the next fragment or step. It renders as
+an inline cue inside a note, or as a divider when used as its own note:
+
+```tsx
+<Slide
+  title="Intro"
+  notes={["Introduce the topic >>> then explain the example", ">>>", "Wrap up"]}
+>
+  Hello
+</Slide>
+```
+
+Use `[DEMO]` as its own note to render a demo divider. Instructions can follow
+the marker name, for example `"[DEMO explain how it works]"`.
+
+Notes support limited inline Markdown for `**bold**`, `*italic*`, and
+`~~strikethrough~~` text. Other Markdown syntax is left unchanged.
 
 ## `slides/test`
 

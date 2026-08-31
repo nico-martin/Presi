@@ -269,3 +269,21 @@ Use the `notes` prop:
 ```
 
 Notes render in the speaker view (press `S`) in dev by default and are omitted from production builds by default.
+
+Use `>>>` inside a note to render an inline next-step cue. Use `">>>"` as its
+own array item to render a full-width divider between notes:
+
+```tsx
+<Slide
+  notes={["Set up the example >>> reveal it", ">>>", "Explain the result"]}
+>
+  {/* ... */}
+</Slide>
+```
+
+Use `"[DEMO]"` as its own note to render a demo divider. Instructions can
+follow the marker name, such as `"[DEMO explain how it works]"`; they render as
+part of the divider.
+
+Notes support only the following inline Markdown: `**bold**`, `*italic*`, and
+`~~strikethrough~~`.

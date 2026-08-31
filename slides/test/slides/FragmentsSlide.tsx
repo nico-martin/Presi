@@ -6,7 +6,11 @@ export default function FragmentsSlide() {
     <Slide
       id="fragments"
       title="Fragments and Transitions"
-      notes={["Each card is revealed by advancing one step."]}
+      notes={[
+        "Each card is revealed by advancing one step.",
+        ">>>",
+        "Explain how fragments stay hidden >>> then compare transition styles.",
+      ]}
       className="bg-white"
       transitionIn="fade-left"
       transitionOut="fade-left"

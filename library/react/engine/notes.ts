@@ -2,10 +2,14 @@ import type { DeckStore } from "./deckStore.ts";
 import { isEditableKeyboardTarget, keyBoardNavigation } from "./keyboard.ts";
 import html from "./notesView.html?raw";
 
+let openSpeakerWindow: Window | null = null;
+
 export class NotesPlugin {
   private store: DeckStore;
-  private speakerWindow: Window | null = null;
+  private speakerWindow: Window | null =
+    openSpeakerWindow && !openSpeakerWindow.closed ? openSpeakerWindow : null;
   private lastSlideIndex: number | null = null;
+  private lastNotesHtml: string | null = null;
   private unsubscribe: () => void;
 
   public constructor(store: DeckStore) {
@@ -44,6 +48,7 @@ export class NotesPlugin {
         return;
       }
 
+      openSpeakerWindow = this.speakerWindow;
       this.speakerWindow.document.write(html);
       this.connect();
     }
@@ -56,8 +61,10 @@ export class NotesPlugin {
 
   private onStateChange = () => {
     const current = this.store.getState();
+    const notesHtml = this.store.getNotesHtml(current.slideIndex);
     if (!this.speakerWindow) {
       this.lastSlideIndex = current.slideIndex;
+      this.lastNotesHtml = notesHtml;
       return;
     }
 
@@ -66,10 +73,14 @@ export class NotesPlugin {
       upcoming: this.store.getNextState(),
     });
 
-    if (current.slideIndex !== this.lastSlideIndex) {
-      this.post("changed-slide", this.store.getNotesHtml(current.slideIndex));
+    if (
+      current.slideIndex !== this.lastSlideIndex ||
+      notesHtml !== this.lastNotesHtml
+    ) {
+      this.post("changed-slide", notesHtml);
     }
     this.lastSlideIndex = current.slideIndex;
+    this.lastNotesHtml = notesHtml;
   };
 
   private onMessage = (event: MessageEvent) => {
@@ -87,7 +98,9 @@ export class NotesPlugin {
       current,
       upcoming: this.store.getNextState(),
     });
-    this.post("changed-slide", this.store.getNotesHtml(current.slideIndex));
+    const notesHtml = this.store.getNotesHtml(current.slideIndex);
+    this.post("changed-slide", notesHtml);
     this.lastSlideIndex = current.slideIndex;
+    this.lastNotesHtml = notesHtml;
   };
 }

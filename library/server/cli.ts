@@ -1,6 +1,32 @@
 #!/usr/bin/env node
 import { createReactPresentation } from "./createReact";
-import { buildPresentation, devPresentation, exportPresentation, presentPresentation } from "./presiServer";
+import {
+  buildPresentation,
+  devPresentation,
+  exportPresentation,
+  presentPresentation,
+  type ExportMode,
+} from "./presiServer";
+
+const parseExportMode = (args: string[]): ExportMode => {
+  let mode: string;
+
+  if (args.length === 0) {
+    return "pdf";
+  } else if (args.length === 1) {
+    mode = args[0].replace(/^(?:--)?mode=/, "");
+  } else if (args.length === 2 && args[0] === "--mode") {
+    mode = args[1];
+  } else {
+    throw new Error("Usage: presi export [--mode=pdf|transcript|notes]");
+  }
+
+  if (mode !== "pdf" && mode !== "transcript" && mode !== "notes") {
+    throw new Error(`Unknown export mode: ${mode}`);
+  }
+
+  return mode;
+};
 
 const main = async () => {
   const command = process.argv[2] || "dev";
@@ -24,7 +50,7 @@ const main = async () => {
   } else if (command === "present") {
     await presentPresentation();
   } else if (command === "export") {
-    await exportPresentation();
+    await exportPresentation({ mode: parseExportMode(process.argv.slice(3)) });
   } else {
     console.error(`Unknown presi command: ${command}`);
     process.exit(1);

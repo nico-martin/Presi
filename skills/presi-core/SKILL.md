@@ -161,9 +161,18 @@ pnpm exec presi-js dev
 pnpm exec presi-js build
 pnpm exec presi-js present
 pnpm exec presi-js export
+pnpm exec presi-js export --mode=transcript
+pnpm exec presi-js export --mode=notes
 ```
 
-`present` builds and serves the static deck. `export` builds with transitions disabled and renders every slide step to a PDF (one page per step) at `export.file`.
+`present` builds and serves the static deck. Export modes are:
 
-During PDF export, `usePresi().isExporting` is `true`. Presentation components
+- The default `pdf` mode renders every slide step to a PDF at `export.file`.
+- `transcript` renders one A4 page per slide with its final step above its notes.
+- `notes` writes all notes as Markdown with one level-two heading per slide.
+
+For an `export.file` of `deck.pdf`, alternate outputs are
+`deck.transcript.pdf` and `deck.notes.md`.
+
+During any export, `usePresi().isExporting` is `true`. Presentation components
 can use this to replace interactive-only content with a static explanation.

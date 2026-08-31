@@ -106,6 +106,68 @@
         margin-top: 0.5em;
       }
 
+      .presi-notes-step-cue {
+        color: #fbbf24;
+        font-size: 0.72em;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .presi-notes-step-cue--inline {
+        display: inline-flex;
+        align-items: center;
+        margin: 0 0.25em;
+        padding: 0.12em 0.45em;
+        border: 1px solid #a16207;
+        border-radius: 0.3em;
+        background: #422006;
+        white-space: nowrap;
+      }
+
+      .presi-notes-step-cue--block {
+        display: flex;
+        align-items: center;
+        gap: 0.75em;
+        margin: 1em 0;
+        white-space: nowrap;
+      }
+
+      .presi-notes-step-cue--block::before,
+      .presi-notes-step-cue--block::after {
+        width: 100%;
+        border-top: 1px solid #a16207;
+        content: "";
+      }
+
+      .presi-notes-demo-cue {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.75em;
+        margin: 1em 0;
+        padding: 0.85em 1em;
+        border: 1px solid #2563eb;
+        border-radius: 0.45em;
+        background: #172554;
+        box-shadow: inset 3px 0 #60a5fa;
+      }
+
+      .presi-notes-demo-cue__label {
+        flex: none;
+        padding: 0.15em 0.45em;
+        border-radius: 0.25em;
+        background: #2563eb;
+        color: #eff6ff;
+        font-size: 0.72em;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+      }
+
+      .presi-notes-demo-cue__description {
+        color: #dbeafe;
+        line-height: 1.4;
+      }
+
       .controls {
         display: flex;
         justify-content: flex-end;

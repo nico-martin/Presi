@@ -34,7 +34,7 @@ The React package is the whole browser runtime plus the authoring API.
 
 `library/react/engine/` holds the framework-independent internals:
 
-- `deckStore.ts`: the heart. Holds slide/fragment/effect registrations, builds per-slide step timelines (DOM-position ordered), resolves and draws hash states, runs step effects with cleanup, and exposes a `useSyncExternalStore`-compatible snapshot plus `window.__PRESI_DECK__` for the export server.
+- `deckStore.ts`: the heart. Holds slide/fragment/effect registrations, builds per-slide step timelines (DOM-position ordered), resolves and draws hash states, runs step effects with cleanup, and exposes a `useSyncExternalStore`-compatible snapshot plus export-only slide metadata and notes through `window.__PRESI_DECK__`.
 - `hashState.ts`: pure hash parsing/serializing, next/back state math, slide-id validation.
 - `transitions.ts`: `TRANSITIONS` keyframes, `TransitionName`, and the WAAPI `TransitionEngine` (stagger, out-inversion, commitStyles bookkeeping).
 - `keyboard.ts`: keyboard navigation/fullscreen helpers and the editable-target guard.
