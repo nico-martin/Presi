@@ -162,8 +162,12 @@ function IntroSlide() {
   return (
     <Slide
       title="Intro"
-      onMount={() => console.log("slide active")}
-      onUnmount={() => console.log("slide inactive")}
+      onMount={({ direction, reason }) =>
+        console.log("slide active", { direction, reason })
+      }
+      onUnmount={({ direction, reason }) =>
+        console.log("slide inactive", { direction, reason })
+      }
     >
       Hello
     </Slide>
@@ -171,7 +175,7 @@ function IntroSlide() {
 }
 ```
 
-Internally these callbacks are registered as a step-0 effect. `onUnmount` runs when the slide is no longer active or when the presentation unmounts.
+Internally these callbacks are registered as a step-0 effect. `onMount` receives `reason: "initial"` with `direction: null` for the initially opened slide, or the `"forward"`/`"backward"` navigation direction. `onUnmount` receives the navigation direction when leaving the slide, or `reason: "unmount"` with `direction: null` when the presentation unmounts.
 
 Transitions are opt-in typed props. Slides and fragments have no transition by default.
 

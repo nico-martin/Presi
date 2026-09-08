@@ -49,7 +49,8 @@ export default function StepControlSlide() {
         stepIndex={2}
         run={() => {
           console.log("Presi JavaScript step mounted");
-          return () => console.log("Presi JavaScript step cleaned up");
+          return (context) =>
+            console.log("Presi JavaScript step cleaned up", context);
         }}
       />
       <Fragment

@@ -2,6 +2,8 @@ import React from "react";
 import { DeckContext, SlideContext, type SlideHandle } from "./context.ts";
 import type {
   EffectRegistration,
+  PresiSlideMountContext,
+  PresiStepCleanupContext,
   SlideRegistration,
 } from "./engine/deckStore.ts";
 import { styles } from "./engine/styles.ts";
@@ -21,8 +23,8 @@ export interface SlideProps extends React.HTMLAttributes<HTMLElement> {
   notes?: Array<string> | null;
   transitionIn?: TransitionName;
   transitionOut?: TransitionName;
-  onMount?: () => void;
-  onUnmount?: () => void;
+  onMount?: (context: PresiSlideMountContext) => void;
+  onUnmount?: (context: PresiStepCleanupContext) => void;
 }
 
 export interface SlideBackground {
@@ -89,11 +91,11 @@ const Slide: React.FC<SlideProps> = ({
     const effect: EffectRegistration = {
       anchor: null,
       stepIndex: 0,
-      run: () => {
-        onMountRef.current?.();
+      run: (mountContext) => {
+        onMountRef.current?.(mountContext);
 
-        return () => {
-          onUnmountRef.current?.();
+        return (unmountContext) => {
+          onUnmountRef.current?.(unmountContext);
         };
       },
     };

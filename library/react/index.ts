@@ -14,7 +14,10 @@ export {
 export type {
   DeckConfig,
   FragmentConfig,
+  PresiNavigationDirection,
+  PresiSlideMountContext,
   PresiSnapshot,
   PresiStepCleanup,
+  PresiStepCleanupContext,
   PresiStepFunction,
 } from "./engine/deckStore.ts";

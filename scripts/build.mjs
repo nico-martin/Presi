@@ -82,7 +82,28 @@ export interface PresiTransitionConfig {
   easing?: string;
 }
 
-export type PresiStepCleanup = void | (() => void);
+export type PresiNavigationDirection = "forward" | "backward";
+export type PresiSlideMountContext =
+  | {
+      reason: "navigation";
+      direction: PresiNavigationDirection;
+    }
+  | {
+      reason: "initial";
+      direction: null;
+    };
+export type PresiStepCleanupContext =
+  | {
+      reason: "navigation";
+      direction: PresiNavigationDirection;
+    }
+  | {
+      reason: "unmount";
+      direction: null;
+    };
+export type PresiStepCleanup =
+  | void
+  | ((context: PresiStepCleanupContext) => void);
 export type PresiStepFunction = () => PresiStepCleanup;
 
 export interface DeckConfig {
@@ -107,8 +128,8 @@ export interface SlideProps extends React.HTMLAttributes<HTMLElement> {
   notes?: Array<string> | null;
   transitionIn?: TransitionName;
   transitionOut?: TransitionName;
-  onMount?: () => void;
-  onUnmount?: () => void;
+  onMount?: (context: PresiSlideMountContext) => void;
+  onUnmount?: (context: PresiStepCleanupContext) => void;
 }
 
 export interface SlideBackground {

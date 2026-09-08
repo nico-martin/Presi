@@ -55,7 +55,28 @@ const renderDemoCue = (instruction: string | undefined): string =>
       : ""
   }</div>`;
 
-export type PresiStepCleanup = void | (() => void);
+export type PresiNavigationDirection = "forward" | "backward";
+export type PresiSlideMountContext =
+  | {
+      reason: "navigation";
+      direction: PresiNavigationDirection;
+    }
+  | {
+      reason: "initial";
+      direction: null;
+    };
+export type PresiStepCleanupContext =
+  | {
+      reason: "navigation";
+      direction: PresiNavigationDirection;
+    }
+  | {
+      reason: "unmount";
+      direction: null;
+    };
+export type PresiStepCleanup =
+  | void
+  | ((context: PresiStepCleanupContext) => void);
 export type PresiStepFunction = () => PresiStepCleanup;
 
 export interface FragmentConfig {
@@ -72,7 +93,7 @@ export interface FragmentRegistration extends FragmentConfig {
 export interface EffectRegistration {
   anchor: HTMLElement | null;
   stepIndex?: number;
-  run: PresiStepFunction;
+  run: (context: PresiSlideMountContext) => PresiStepCleanup;
 }
 
 export interface SlideRegistration {
@@ -157,6 +178,19 @@ const isElementVisibleAtStep = (
     : stepIndex === 0 || stepIndex > currentStep;
 };
 
+const getNavigationDirection = (
+  previous: PresiState,
+  next: PresiState,
+): PresiNavigationDirection | null => {
+  if (previous.slideIndex !== next.slideIndex) {
+    return next.slideIndex > previous.slideIndex ? "forward" : "backward";
+  }
+  if (previous.stepIndex !== next.stepIndex) {
+    return next.stepIndex > previous.stepIndex ? "forward" : "backward";
+  }
+  return null;
+};
+
 export class DeckStore {
   private wrapper: HTMLElement | null = null;
   private config: DeckConfig = { aspectRatio: "16:9" };
@@ -235,7 +269,10 @@ export class DeckStore {
     removeEventListener("pointerup", this.pointerup);
     removeEventListener("pointercancel", this.pointercancel);
     this.swipeStart = null;
-    this.cleanInactiveEffects(new Set());
+    this.cleanInactiveEffects(new Set(), {
+      reason: "unmount",
+      direction: null,
+    });
     this.notes?.destroy();
     this.notes = null;
     this.wrapper = null;
@@ -545,8 +582,19 @@ export class DeckStore {
       }
     });
 
-    this.cleanInactiveEffects(activeEffects);
-    activeEffects.forEach((effect) => this.runEffect(effect));
+    const navigationDirection = prevState
+      ? getNavigationDirection(prevState, { slideIndex, stepIndex })
+      : null;
+    this.cleanInactiveEffects(
+      activeEffects,
+      navigationDirection
+        ? { reason: "navigation", direction: navigationDirection }
+        : { reason: "unmount", direction: null },
+    );
+    const mountContext: PresiSlideMountContext = navigationDirection
+      ? { reason: "navigation", direction: navigationDirection }
+      : { reason: "initial", direction: null };
+    activeEffects.forEach((effect) => this.runEffect(effect, mountContext));
 
     this.currentState = { slideIndex, stepIndex };
     this.updateSnapshot();
@@ -595,16 +643,22 @@ export class DeckStore {
     ];
   };
 
-  private runEffect = (effect: EffectRegistration) => {
+  private runEffect = (
+    effect: EffectRegistration,
+    context: PresiSlideMountContext,
+  ) => {
     if (this.activeEffects.has(effect)) return;
-    this.activeEffects.set(effect, effect.run());
+    this.activeEffects.set(effect, effect.run(context));
   };
 
-  private cleanInactiveEffects = (activeEffects: Set<EffectRegistration>) => {
+  private cleanInactiveEffects = (
+    activeEffects: Set<EffectRegistration>,
+    context: PresiStepCleanupContext,
+  ) => {
     Array.from(this.activeEffects.entries()).map(([effect, cleanup]) => {
       if (activeEffects.has(effect)) return;
 
-      typeof cleanup === "function" && cleanup();
+      typeof cleanup === "function" && cleanup(context);
       this.activeEffects.delete(effect);
     });
   };

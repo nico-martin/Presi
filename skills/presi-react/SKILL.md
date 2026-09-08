@@ -206,12 +206,17 @@ The callback may return cleanup:
   stepIndex={2}
   run={() => {
     const controller = startSomething();
-    return () => controller.stop();
+    return ({ direction, reason }) => {
+      controller.stop();
+      if (reason === "navigation" && direction === "backward") {
+        restorePreviousState();
+      }
+    };
   }}
 />
 ```
 
-Cleanup runs when the step is no longer active or when the presentation unmounts. Omitting `stepIndex` assigns the next implicit step, based on the component's position in the slide.
+Cleanup runs when the step is no longer active or when the presentation unmounts. Its context has a `reason` of `"navigation"` with a `direction` of `"forward"` or `"backward"`, or a `reason` of `"unmount"` with `direction: null`. Parameterless cleanup functions remain valid when the context is not needed. Omitting `stepIndex` assigns the next implicit step, based on the component's position in the slide.
 
 ## Slide Lifecycle Effects
 
@@ -222,8 +227,12 @@ function IntroSlide() {
   return (
     <Slide
       title="Intro"
-      onMount={() => console.log("slide active")}
-      onUnmount={() => console.log("slide inactive")}
+      onMount={({ direction, reason }) =>
+        console.log("slide active", { direction, reason })
+      }
+      onUnmount={({ direction, reason }) =>
+        console.log("slide inactive", { direction, reason })
+      }
     >
       Hello
     </Slide>
@@ -233,8 +242,8 @@ function IntroSlide() {
 
 Rules:
 
-- `onMount` runs when the slide becomes active.
-- `onUnmount` runs when the slide is no longer active or when the presentation unmounts.
+- `onMount` runs when the slide becomes active. Its context has a `reason` of `"navigation"` with a `direction` of `"forward"` or `"backward"`, or a `reason` of `"initial"` with `direction: null` for the initially opened slide.
+- `onUnmount` runs when the slide is no longer active or when the presentation unmounts. It receives the same cleanup context as `Step`: navigation direction, or `reason: "unmount"` with `direction: null`.
 - Do not use React `useEffect` for slide lifecycle; the whole deck mounts at once.
 
 ## Presentation State

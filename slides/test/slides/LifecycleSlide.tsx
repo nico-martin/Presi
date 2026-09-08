@@ -21,13 +21,15 @@ export default function LifecycleSlide() {
         },
       }}
       transitionIn="fade-left"
-      onMount={() => {
+      onMount={(context) => {
+        console.log("Presi slide mounted", context);
         intervalRef.current = window.setInterval(
           () => setSeconds((current) => current + 1),
           1000,
         );
       }}
-      onUnmount={() => {
+      onUnmount={(context) => {
+        console.log("Presi slide unmounted", context);
         intervalRef.current !== null && clearInterval(intervalRef.current);
         intervalRef.current = null;
         setSeconds(0);
