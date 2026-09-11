@@ -8,6 +8,7 @@ export interface WrapperProps {
   aspectRatio: `${number}:${number}`;
   transition?: PresiTransitionConfig;
   calculateFontSize?: () => number;
+  fontScale?: number;
 }
 
 const Wrapper: React.FC<WrapperProps> = ({
@@ -15,12 +16,18 @@ const Wrapper: React.FC<WrapperProps> = ({
   aspectRatio,
   transition,
   calculateFontSize,
+  fontScale,
 }) => {
   const [store] = React.useState(() => new DeckStore());
   const ref = React.useRef<HTMLDivElement>(null);
 
   React.useLayoutEffect(() => {
-    store.updateConfig({ aspectRatio, transition, calculateFontSize });
+    store.updateConfig({
+      aspectRatio,
+      transition,
+      calculateFontSize,
+      fontScale,
+    });
   });
 
   React.useLayoutEffect(() => {

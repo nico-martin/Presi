@@ -111,6 +111,7 @@ export interface DeckConfig {
   aspectRatio: `${number}:${number}`;
   transition?: PresiTransitionConfig;
   calculateFontSize?: () => number;
+  fontScale?: number;
 }
 
 export interface PresiSnapshot {
@@ -283,7 +284,8 @@ export class DeckStore {
       config.aspectRatio !== this.config.aspectRatio ||
       JSON.stringify(config.transition) !==
         JSON.stringify(this.config.transition) ||
-      config.calculateFontSize !== this.config.calculateFontSize;
+      config.calculateFontSize !== this.config.calculateFontSize ||
+      config.fontScale !== this.config.fontScale;
     this.config = config;
     if (this.mounted && changed) {
       this.applyConfig();
@@ -748,8 +750,11 @@ export class DeckStore {
 
   private resize = () => {
     const calculateFontSize =
-      this.config.calculateFontSize || (() => window.innerWidth / 48);
-    document.documentElement.style.fontSize = `${calculateFontSize()}px`;
+      this.config.calculateFontSize ||
+      (() => (this.wrapper?.clientWidth || 0) / 48);
+    document.documentElement.style.fontSize = `${
+      calculateFontSize() * (this.config.fontScale ?? 1)
+    }px`;
   };
 
   public next = () => {

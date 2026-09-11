@@ -225,7 +225,7 @@ Navigation is instant: advancing always updates the URL state immediately, and n
 
 `inDelay` stages the animations without delaying navigation: in-transitions start `inDelay` milliseconds after the out-transitions begin, and incoming elements are held invisible until then. With `duration: 800` and `inDelay: 400`, the old slide is half flown out when the next one starts flying in. The default is `0`, which runs in- and out-transitions together. The outgoing slide stays visible underneath the incoming slide until its out-transition finishes.
 
-`Wrapper` also accepts `calculateFontSize` to control the root font size that all `rem`-based slide styling scales from (default: `window.innerWidth / 48`).
+`Wrapper` also accepts `calculateFontSize` to control the root font size that all `rem`-based slide styling scales from (default: the fitted canvas width divided by `48`).
 
 `usePresi` exposes presentation and render state:
 

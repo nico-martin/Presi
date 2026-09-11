@@ -110,6 +110,7 @@ export interface DeckConfig {
   aspectRatio: \`${"${number}:${number}"}\`;
   transition?: PresiTransitionConfig;
   calculateFontSize?: () => number;
+  fontScale?: number;
 }
 
 export interface WrapperProps {
@@ -117,6 +118,7 @@ export interface WrapperProps {
   aspectRatio: \`${"${number}:${number}"}\`;
   transition?: PresiTransitionConfig;
   calculateFontSize?: () => number;
+  fontScale?: number;
 }
 
 export interface SlideProps extends React.HTMLAttributes<HTMLElement> {
@@ -277,7 +279,7 @@ const writePackageJson = async () => {
     `${JSON.stringify(
       {
         name: "presi-js",
-        version: "0.0.17",
+        version: "0.0.20",
         description: "A modern presentation framework",
         type: "module",
         author: "Nico Martin <mail@nico.dev>",
